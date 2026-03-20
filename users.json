@@ -1,0 +1,37 @@
+{
+  "dikshyasht123@gmail.com": {
+    "name": "Dikshya Shrestha",
+    "email": "dikshyasht123@gmail.com",
+    "password_hash": "15e2b0d3c33891ebb0f1ef609ec419420c20e320ce94c65fbc8c3312448eb225",
+    "created_at": "2026-01-07T10:06:28"
+  },
+  "dikshyasht321@gmail.com": {
+    "name": "Dikshya Shrestha",
+    "email": "dikshyasht321@gmail.com",
+    "password_hash": "15e2b0d3c33891ebb0f1ef609ec419420c20e320ce94c65fbc8c3312448eb225",
+    "created_at": "2026-01-07T10:08:16"
+  },
+  "ashwita90@gmail.com": {
+    "name": "Ashwita Bhatt",
+    "email": "ashwita90@gmail.com",
+    "password_hash": "9e34aea49a4a4b9d621e2f60a4cee547b1a4c4c6505ed68435b93ad750fa6c63",
+    "created_at": "2026-01-08T05:34:38"
+  },
+  "Ashwita Bhatt": {
+    "email": "ab123@gmail.com",
+    "password": "8eff46e67fd4c8a10a1f0d713e112c120d6f908dbf781f89d134b9ee6b458131",
+    "created": "2026-03-20T10:56:00.730311"
+  },
+  "ash@gmail.com": {
+    "name": "Rupa",
+    "email": "ash@gmail.com",
+    "password_hash": "7858b64d004cefa45ab9572563477ac9f2dd32a0574a6ec141294b5420a07a71",
+    "created_at": "2026-03-20T06:58:48"
+  },
+  "abc@gmail.com": {
+    "name": "Anmol Bhatt",
+    "email": "abc@gmail.com",
+    "password_hash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+    "created_at": "2026-03-20T07:30:17"
+  }
+}

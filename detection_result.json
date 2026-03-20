@@ -1,0 +1,234 @@
+[
+  {
+    "tumor_type": "No Tumor",
+    "highest_confidence": "72.25%",
+    "confidence": {
+      "Glioma": "0.00%",
+      "Meningioma": "10.60%",
+      "No Tumor": "72.25%",
+      "Pituitary": "17.15%"
+    },
+    "class_index": 2,
+    "image_shape": [
+      224,
+      224,
+      3
+    ],
+    "has_tumor": false,
+    "model_version": "VGG16",
+    "raw_probabilities": {
+      "Glioma": 2.1e-05,
+      "Meningioma": 0.105999,
+      "No Tumor": 0.722469,
+      "Pituitary": 0.171512
+    }
+  },
+  {
+    "tumor_type": "Meningioma",
+    "highest_confidence": "94.50%",
+    "confidence": {
+      "Glioma": "5.01%",
+      "Meningioma": "94.50%",
+      "No Tumor": "0.00%",
+      "Pituitary": "0.48%"
+    },
+    "class_index": 1,
+    "image_shape": [
+      224,
+      224,
+      3
+    ],
+    "has_tumor": true,
+    "model_version": "VGG16",
+    "raw_probabilities": {
+      "Glioma": 0.050111,
+      "Meningioma": 0.945024,
+      "No Tumor": 4.5e-05,
+      "Pituitary": 0.00482
+    },
+    "user": "abc@gmail.com",
+    "timestamp": "2026-03-20 22:34:15"
+  },
+  {
+    "tumor_type": "Glioma",
+    "highest_confidence": "81.26%",
+    "confidence": {
+      "Glioma": "81.26%",
+      "Meningioma": "18.55%",
+      "No Tumor": "0.13%",
+      "Pituitary": "0.06%"
+    },
+    "class_index": 0,
+    "image_shape": [
+      224,
+      224,
+      3
+    ],
+    "has_tumor": true,
+    "model_version": "VGG16",
+    "raw_probabilities": {
+      "Glioma": 0.812596,
+      "Meningioma": 0.18545,
+      "No Tumor": 0.001314,
+      "Pituitary": 0.00064
+    },
+    "user": "abc@gmail.com",
+    "timestamp": "2026-03-20 22:34:26"
+  },
+  {
+    "tumor_type": "Glioma",
+    "highest_confidence": "99.88%",
+    "confidence": {
+      "Glioma": "99.88%",
+      "Meningioma": "0.12%",
+      "No Tumor": "0.00%",
+      "Pituitary": "0.00%"
+    },
+    "class_index": 0,
+    "image_shape": [
+      224,
+      224,
+      3
+    ],
+    "has_tumor": true,
+    "model_version": "VGG16",
+    "raw_probabilities": {
+      "Glioma": 0.998835,
+      "Meningioma": 0.001152,
+      "No Tumor": 3e-06,
+      "Pituitary": 1e-05
+    },
+    "user": "abc@gmail.com",
+    "timestamp": "2026-03-20 22:34:32"
+  },
+  {
+    "tumor_type": "Pituitary",
+    "highest_confidence": "99.89%",
+    "confidence": {
+      "Glioma": "0.03%",
+      "Meningioma": "0.06%",
+      "No Tumor": "0.02%",
+      "Pituitary": "99.89%"
+    },
+    "class_index": 3,
+    "image_shape": [
+      224,
+      224,
+      3
+    ],
+    "has_tumor": true,
+    "model_version": "VGG16",
+    "raw_probabilities": {
+      "Glioma": 0.000306,
+      "Meningioma": 0.000553,
+      "No Tumor": 0.000192,
+      "Pituitary": 0.998949
+    },
+    "user": "abc@gmail.com",
+    "timestamp": "2026-03-20 22:34:42"
+  },
+  {
+    "tumor_type": "No Tumor",
+    "highest_confidence": "99.23%",
+    "confidence": {
+      "Glioma": "0.19%",
+      "Meningioma": "0.56%",
+      "No Tumor": "99.23%",
+      "Pituitary": "0.02%"
+    },
+    "class_index": 2,
+    "image_shape": [
+      224,
+      224,
+      3
+    ],
+    "has_tumor": false,
+    "model_version": "VGG16",
+    "raw_probabilities": {
+      "Glioma": 0.001893,
+      "Meningioma": 0.005611,
+      "No Tumor": 0.992284,
+      "Pituitary": 0.000212
+    },
+    "user": "abc@gmail.com",
+    "timestamp": "2026-03-20 22:34:49"
+  },
+  {
+    "tumor_type": "Glioma",
+    "highest_confidence": "73.68%",
+    "confidence": {
+      "Glioma": "73.68%",
+      "Meningioma": "26.27%",
+      "No Tumor": "0.03%",
+      "Pituitary": "0.01%"
+    },
+    "class_index": 0,
+    "image_shape": [
+      224,
+      224,
+      3
+    ],
+    "has_tumor": true,
+    "model_version": "VGG16",
+    "raw_probabilities": {
+      "Glioma": 0.736834,
+      "Meningioma": 0.262706,
+      "No Tumor": 0.000317,
+      "Pituitary": 0.000144
+    },
+    "user": "abc@gmail.com",
+    "timestamp": "2026-03-20 22:34:59"
+  },
+  {
+    "tumor_type": "Meningioma",
+    "highest_confidence": "94.50%",
+    "confidence": {
+      "Glioma": "5.01%",
+      "Meningioma": "94.50%",
+      "No Tumor": "0.00%",
+      "Pituitary": "0.48%"
+    },
+    "class_index": 1,
+    "image_shape": [
+      224,
+      224,
+      3
+    ],
+    "has_tumor": true,
+    "model_version": "VGG16",
+    "raw_probabilities": {
+      "Glioma": 0.050111,
+      "Meningioma": 0.945024,
+      "No Tumor": 4.5e-05,
+      "Pituitary": 0.00482
+    },
+    "user": "abc@gmail.com",
+    "timestamp": "2026-03-20 22:49:49"
+  },
+  {
+    "tumor_type": "No Tumor",
+    "highest_confidence": "93.30%",
+    "confidence": {
+      "Glioma": "0.00%",
+      "Meningioma": "6.64%",
+      "No Tumor": "93.30%",
+      "Pituitary": "0.05%"
+    },
+    "class_index": 2,
+    "image_shape": [
+      224,
+      224,
+      3
+    ],
+    "has_tumor": false,
+    "model_version": "VGG16",
+    "raw_probabilities": {
+      "Glioma": 4.4e-05,
+      "Meningioma": 0.066444,
+      "No Tumor": 0.932992,
+      "Pituitary": 0.00052
+    },
+    "user": "abc@gmail.com",
+    "timestamp": "2026-03-20 22:53:09"
+  }
+]

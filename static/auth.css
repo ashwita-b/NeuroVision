@@ -1,0 +1,434 @@
+/* NeuroVision: Medical Diagnostic Theme */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", "Arial", sans-serif;
+}
+
+body {
+  background: linear-gradient(135deg, #e8f4ff 0%, #f0f9ff 100%);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+/* Main Container */
+.medical-container {
+  width: 100%;
+  max-width: 1000px;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 25px rgba(0, 91, 187, 0.1);
+  border: 1px solid #e0f0ff;
+}
+
+/* Header - Professional Medical Theme */
+.header {
+  background: #ffffff;
+  color: #1178b6;
+  padding: 25px 40px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 3px solid #e8f4ff;
+}
+
+.header-icon {
+  font-size: 32px;
+  background: #1178b6;
+  color: white;
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-text h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 5px;
+  color: #1178b6;
+  letter-spacing: 0.5px;
+}
+
+.header-text p {
+  font-size: 16px;
+  color: #666;
+  font-weight: 400;
+}
+
+/* Content Wrapper */
+.content-wrapper {
+  display: flex;
+  min-height: 500px;
+}
+
+/* Left Panel - Professional Welcome Section */
+.welcome-panel {
+  flex: 1;
+  background: linear-gradient(145deg, #1178b6 0%, #1178b6 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.welcome-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(to right, #00aaff, #1178b6);
+}
+
+.welcome-content {
+  text-align: center;
+  z-index: 1;
+  position: relative;
+}
+
+.welcome-content h2 {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 15px;
+  letter-spacing: 1px;
+}
+
+.welcome-content p {
+  font-size: 18px;
+  opacity: 0.9;
+  margin-bottom: 30px;
+  font-weight: 300;
+  line-height: 1.5;
+}
+
+.welcome-icon {
+  font-size: 70px;
+  color: #ffffff;
+  margin-top: 20px;
+  opacity: 0.9;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.25;
+  }
+  100% {
+    opacity: 0.15;
+  }
+}
+
+/* Right Panel - Forms */
+.form-section {
+  flex: 1;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+}
+
+/* Form Tabs - Professional Design */
+.form-tabs {
+  display: flex;
+  background: #f5faff;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 30px;
+  border: 1px solid #e0f0ff;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 16px;
+  background: transparent;
+  border: none;
+  color: #1178b6;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  text-align: center;
+  position: relative;
+}
+
+.tab-btn:hover {
+  background: rgba(0, 91, 187, 0.05);
+  text-decoration: none;
+  color: #1178b6;
+}
+
+.tab-btn.active {
+  background: #1178b6;
+  color: white;
+}
+
+.tab-btn.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #1178b6;
+}
+
+/* Forms Container */
+.forms-container {
+  position: relative;
+  flex: 1;
+  min-height: 300px;
+}
+
+/* Form Styles */
+.form {
+  display: none;
+  width: 100%;
+  height: 100%;
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form.active {
+  display: block;
+}
+
+/* Show forms based on URL hash */
+.form:target,
+.form.active {
+  display: block;
+}
+
+/* Hide active form when another is targeted */
+.forms-container:has(#register:target) #login {
+  display: none;
+}
+
+.forms-container:has(#login:target) #register {
+  display: none;
+}
+
+/* Input Groups - Professional Medical Style */
+.input-group {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.input-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #1178b6;
+  font-size: 16px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 15px 15px 15px 45px;
+  border: 2px solid #e0f0ff;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #333;
+  background: #f8fbff;
+  transition: all 0.3s ease;
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: #1178b6;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(0, 91, 187, 0.1);
+}
+
+.input-group input::placeholder {
+  color: #888;
+  font-weight: 300;
+}
+
+/* Form Options */
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px 0 25px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #1178b6;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #1178b6;
+  cursor: pointer;
+}
+
+.link-text {
+  color: #1178b6;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  transition: color 0.3s ease;
+}
+
+.link-text:hover {
+  color: #1178b6;
+  text-decoration: underline;
+}
+
+/* Checkbox Group */
+.checkbox-group {
+  margin: 20px 0 25px;
+}
+
+/* Submit Button - Medical Professional Style */
+.submit-btn {
+  background: linear-gradient(to right, #1178b6, #1178b6);
+  color: white;
+  border: none;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  letter-spacing: 0.5px;
+}
+
+.submit-btn:hover {
+  background: linear-gradient(to right, #1178b6, #1178b6);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 91, 187, 0.2);
+}
+
+.submit-btn:active {
+  transform: translateY(0);
+}
+
+/* Form Footer */
+.form-footer {
+  text-align: center;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #e8f4ff;
+  color: #666;
+  font-size: 14px;
+}
+
+.form-footer a {
+  color: #1178b6;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.form-footer a:hover {
+  color: #1178b6;
+  text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .content-wrapper {
+    flex-direction: column;
+  }
+
+  .welcome-panel {
+    padding: 30px 20px;
+    min-height: 180px;
+  }
+
+  .form-section {
+    padding: 30px 20px;
+  }
+
+  .header {
+    padding: 20px;
+  }
+
+  .welcome-content h2 {
+    font-size: 28px;
+  }
+
+  .welcome-content p {
+    font-size: 16px;
+  }
+
+  .welcome-icon {
+    font-size: 50px;
+  }
+
+  .tab-btn {
+    padding: 14px;
+    font-size: 15px;
+  }
+}
+
+/* Additional Medical Theme Elements */
+.medical-note {
+  background: #f8fbff;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 20px;
+  border-left: 3px solid#1178b6;
+}
+
+.medical-note p {
+  color: #1178b6;
+  font-size: 13px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Focus States for Accessibility */
+input:focus-visible {
+  outline: 2px solid #1178b6;
+  outline-offset: 2px;
+}
+
+button:focus-visible {
+  outline: 2px solid#1178b6;
+  outline-offset: 2px;
+}

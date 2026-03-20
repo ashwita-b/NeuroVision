@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>NeurVision:MRI Based Tumor Analysis</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='detection.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='chatbot.css') }}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="icon" href="{{ url_for('static', filename='fav.jpg') }}" />
+</head>
+<body>
+
+<!-- ─── Header ──────────────────────────────────────────────────────────── -->
+<header class="header">
+  <div class="logo"><i class="fa-solid fa-brain"></i></div>
+  <div class="header-text">
+    <h1>NeuroVision:MRI-Based Tumor Analysis</h1>
+  </div>
+  <nav class="nav-links">
+    <a href="{{ url_for('home') }}">Home</a>
+    <a href="{{ url_for('detection') }}">Detection</a>
+    <a href="{{ url_for('logout') }}" class="logout-btn">
+      <i class="fas fa-sign-out-alt"></i> Logout
+    </a>
+  </nav>
+</header>
+
+<!-- ─── Main ────────────────────────────────────────────────────────────── -->
+<section class="container">
+
+  <!-- Input Card -->
+  <div class="card">
+    <div class="card-title">
+      <i class="fa-solid fa-upload"></i>
+      <h2>Input Section</h2>
+    </div>
+    <div class="upload-box" id="uploadBox">
+      <i class="fa-solid fa-cloud-arrow-up"></i>
+      <p class="upload-text"><span>Click to upload</span> or drag and drop</p>
+      <p class="formats">Accepted formats: JPG, PNG</p>
+      <input type="file" id="imageInput" accept=".jpg,.jpeg,.png" />
+      <img id="previewImage" class="preview-image" alt="Preview" />
+    </div>
+    <button class="analyze-btn" id="analyzeBtn">
+      <i class="fas fa-magnifying-glass"></i> Analyze MRI Scan
+    </button>
+  </div>
+
+  <!-- Output Card -->
+  <div class="card">
+    <div class="card-title">
+      <i class="fa-solid fa-wave-square"></i>
+      <h2>Output Section</h2>
+    </div>
+    <div class="output-box" id="outputBox">
+      <div class="result-content" id="resultContent">
+        <i class="fa-solid fa-brain"></i>
+        <h3>No analysis yet</h3>
+        <p>Upload an MRI scan to begin</p>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="history-section">
+      <h3><i class="fas fa-history"></i> Recent Analyses</h3>
+      <ul class="history-list" id="historyList"></ul>
+    </div>
+  </div>
+
+</section>
+
+<!-- ─── Grad-CAM Modal (2-panel: Raw | Heatmap) ─────────────────────────── -->
+<div id="gradcamModal" class="modal">
+  <div class="modal-content-large">
+    <span class="close">&times;</span>
+    <h2 class="modal-title">Grad-CAM Class Activation Mapping</h2>
+
+    <div class="gradcam-three-panel">
+
+      <!-- Panel 1: Raw Image -->
+      <div class="gradcam-panel">
+        <div class="panel-header">Raw Image</div>
+        <div class="panel-image-container">
+          <img id="rawImage" alt="Raw MRI" />
+        </div>
+        <div class="panel-info">
+          <div class="info-label">Actual Label</div>
+          <div class="info-value" id="actualLabel">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Panel 2: Pure Heatmap -->
+      <div class="gradcam-panel">
+        <div class="panel-header">Class Activation Heatmap</div>
+        <div class="panel-image-container">
+          <img id="heatmapImage" alt="Pure Heatmap" />
+        </div>
+        <div class="panel-info">
+          <div class="info-label">Confidence</div>
+          <div class="info-value confidence" id="confidenceValue">Loading...</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Grad-CAM Legend -->
+    <div class="gradcam-legend-enhanced">
+      <div class="legend-header"><i class="fas fa-palette"></i> Activation Intensity Scale</div>
+      <div class="legend-content">
+        <div class="legend-bar-gradient"></div>
+        <div class="legend-labels-enhanced">
+          <span>Low<br/>Activation</span>
+          <span>Medium<br/>Activation</span>
+          <span>High<br/>Activation<br/>(Tumor Region)</span>
+        </div>
+      </div>
+      <div class="legend-description">
+        Red/Yellow regions indicate areas with highest neural network activation, suggesting tumor presence
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!--  CHATBOT – FAB + Panel                                                -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+
+<button class="chatbot-fab" id="chatbotFab" title="Ask NeuroBot" aria-label="Open chat assistant">
+  <i class="fas fa-comment-medical" style="font-size:24px;"></i>
+  <span class="chatbot-fab-badge" id="chatbotBadge" hidden>!</span>
+</button>
+
+<div class="chatbot-panel" id="chatbotPanel" aria-hidden="true">
+  <div class="chatbot-panel-header">
+    <div class="chatbot-panel-title">
+      <div class="chatbot-avatar-sm"><i class="fas fa-brain"></i></div>
+      <div>
+        <strong>NeuroBot</strong>
+        <small>Brain Tumor Assistant</small>
+      </div>
+    </div>
+    <div class="chatbot-panel-actions">
+      <button class="chatbot-mode-btn active" id="modeGeneral"     data-mode="general"         title="General Q&A">
+        <i class="fas fa-book-medical"></i>
+      </button>
+      <button class="chatbot-mode-btn"        id="modeResult"      data-mode="result_analysis"  title="Explain Result">
+        <i class="fas fa-microscope"></i>
+      </button>
+      <button class="chatbot-mode-btn"        id="modeComparative" data-mode="comparative"      title="Compare Cases">
+        <i class="fas fa-layer-group"></i>
+      </button>
+      <button class="chatbot-close-btn" id="chatbotClose" aria-label="Close chat">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="chatbot-mode-hint" id="chatbotModeHint">
+    <i class="fas fa-info-circle"></i>
+    <span id="modeHintText">Ask me anything about brain tumors.</span>
+  </div>
+
+  <div class="chatbot-messages" id="chatbotMessages">
+    <div class="chatbot-msg bot">
+      <div class="chatbot-msg-avatar"><i class="fas fa-brain"></i></div>
+      <div class="chatbot-msg-bubble">
+        Hello! I'm NeuroBot. 🧠<br/>
+        Use the buttons above to switch between:<br/>
+        📖 <b>General</b> – brain tumor education<br/>
+        🔬 <b>Result Analysis</b> – explain your scan result<br/>
+        📊 <b>Compare</b> – find similar dataset cases
+      </div>
+    </div>
+  </div>
+
+  <div class="chatbot-typing" id="chatbotTyping" hidden>
+    <span></span><span></span><span></span>
+  </div>
+
+  <div class="chatbot-input-area">
+    <input type="text" id="chatbotInput" placeholder="Ask a question..." autocomplete="off" />
+    <button id="chatbotSend" aria-label="Send">
+      <i class="fas fa-paper-plane"></i>
+    </button>
+  </div>
+</div>
+
+<!-- ─── Scripts ──────────────────────────────────────────────────────────── -->
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+//  Detection Logic
+// ════════════════════════════════════════════════════════════════════════════
+const uploadBox       = document.getElementById("uploadBox");
+const imageInput      = document.getElementById("imageInput");
+const previewImage    = document.getElementById("previewImage");
+const analyzeBtn      = document.getElementById("analyzeBtn");
+const outputBox       = document.getElementById("outputBox");
+const resultContent   = document.getElementById("resultContent");
+const historyList     = document.getElementById("historyList");
+const modal           = document.getElementById("gradcamModal");
+const closeModal      = document.getElementsByClassName("close")[0];
+const rawImage        = document.getElementById("rawImage");
+const heatmapImage    = document.getElementById("heatmapImage");
+const actualLabel     = document.getElementById("actualLabel");
+const confidenceValue = document.getElementById("confidenceValue");
+
+let currentGradcamData = null;
+let currentPrediction  = null;
+
+// ── Image preview ────────────────────────────────────────────────────────────
+imageInput.addEventListener("change", function(e) {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      previewImage.src = e.target.result;
+      previewImage.style.display = "block";
+      uploadBox.querySelector(".fa-cloud-arrow-up").style.display = "none";
+      uploadBox.querySelector(".upload-text").style.display = "none";
+      uploadBox.querySelector(".formats").style.display = "none";
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+// ── Modal open/close ─────────────────────────────────────────────────────────
+closeModal.onclick = () => modal.style.display = "none";
+window.onclick = e => { if (e.target == modal) modal.style.display = "none"; };
+
+// ── Show Grad-CAM modal (2 panels: Raw + Heatmap) ────────────────────────────
+function showGradcam() {
+  if (!currentGradcamData) {
+    alert("Grad-CAM visualization is not available for this analysis.");
+    return;
+  }
+
+  // Panel 1: raw image
+  rawImage.src = previewImage.src;
+
+  // Panel 2: pure heatmap
+  if (currentGradcamData.heatmap) {
+    heatmapImage.src = currentGradcamData.heatmap;
+  }
+
+  // Labels
+  actualLabel.textContent = currentPrediction.tumor_type;
+  actualLabel.className   = currentPrediction.tumor_type === "No Tumor"
+    ? "info-value label-negative" : "info-value label-positive";
+
+  confidenceValue.textContent = currentPrediction.highest_confidence;
+
+  modal.style.display = "block";
+}
+
+// ── Analyze button ───────────────────────────────────────────────────────────
+analyzeBtn.addEventListener("click", detectTumor);
+
+function detectTumor() {
+  if (!imageInput.files.length) { alert("Please upload an MRI image first."); return; }
+  const file   = imageInput.files[0];
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    const base64String = reader.result;
+    resultContent.innerHTML = `
+      <i class="fas fa-spinner fa-spin" style="font-size:50px;"></i>
+      <h3>Analyzing MRI Scan...</h3>
+      <p>Please wait while we process your image</p>`;
+    outputBox.style.background = "#f8fbff";
+
+    fetch("/predict", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image: [base64String] })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) {
+        resultContent.innerHTML = `<i class="fas fa-exclamation-triangle" style="color:#ef4444;font-size:50px;"></i><h3>Error</h3><p>${data.error}</p>`;
+        return;
+      }
+
+      const prediction   = data.predictions[0];
+      currentPrediction  = prediction;
+      currentGradcamData = prediction.gradcam;
+
+      const hc = parseFloat(prediction.highest_confidence);
+      outputBox.style.background = prediction.tumor_type === "No Tumor" ? "#d1fae5" : "#fee2e2";
+
+      if (hc >= 50) {
+        resultContent.innerHTML = `
+          <div class="result-header ${prediction.tumor_type === "No Tumor" ? "no-tumor" : "tumor-detected"}">
+            <i class="fas ${prediction.tumor_type === "No Tumor" ? "fa-check-circle" : "fa-exclamation-triangle"}"></i>
+            <h2>${prediction.tumor_type.toUpperCase()}</h2>
+            <div class="confidence-badge">Confidence: ${prediction.highest_confidence}</div>
+          </div>
+          <div class="result-message">
+            ${prediction.tumor_type === "No Tumor"
+              ? "No tumor detected in the MRI scan."
+              : `<strong>${prediction.tumor_type}</strong> detected. Please consult a medical professional.`}
+          </div>`;
+
+        // Show Grad-CAM button if tumor detected and gradcam available
+        if (prediction.gradcam && prediction.gradcam.generated && prediction.tumor_type !== "No Tumor") {
+          const gradcamBtn = document.createElement("button");
+          gradcamBtn.className = "gradcam-btn";
+          gradcamBtn.innerHTML = '<i class="fas fa-fire"></i> View Grad-CAM Activation Map';
+          gradcamBtn.onclick   = showGradcam;
+          resultContent.appendChild(gradcamBtn);
+        }
+
+        _onDetectionComplete(prediction);
+
+      } else {
+        outputBox.style.background = "#fef3c7";
+        resultContent.innerHTML = `
+          <div class="result-header low-confidence">
+            <i class="fas fa-question-circle" style="color:#f59e0b;font-size:50px;"></i>
+            <h2>INCONCLUSIVE RESULT</h2>
+            <div class="confidence-badge low">Confidence: ${prediction.highest_confidence}</div>
+          </div>
+          <div class="result-message">
+            <p>Analysis confidence is below threshold (${prediction.highest_confidence} &lt; 50%).</p>
+            <p>Please upload a clearer MRI image or consult a medical specialist.</p>
+          </div>`;
+      }
+
+      // History entry
+      const li = document.createElement("li");
+      li.innerHTML = `<img src="${previewImage.src}" width="50" height="50">
+        <div><strong>${prediction.tumor_type}</strong>
+             <span>${prediction.highest_confidence}</span>
+             <small>${new Date().toLocaleTimeString()}</small></div>`;
+      historyList.prepend(li);
+    })
+    .catch(() => {
+      resultContent.innerHTML = `<i class="fas fa-exclamation-triangle" style="color:#ef4444;font-size:50px;"></i><h3>Network Error</h3><p>Please check your connection and try again</p>`;
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Drag & drop ──────────────────────────────────────────────────────────────
+uploadBox.addEventListener("dragover",  e => { e.preventDefault(); uploadBox.style.borderColor="#1e66ff"; uploadBox.style.background="#f0f6ff"; });
+uploadBox.addEventListener("dragleave", () => { uploadBox.style.borderColor="#9ec5ff"; uploadBox.style.background="transparent"; });
+uploadBox.addEventListener("drop", e => {
+  e.preventDefault(); uploadBox.style.borderColor="#9ec5ff"; uploadBox.style.background="transparent";
+  if (e.dataTransfer.files.length) { imageInput.files=e.dataTransfer.files; imageInput.dispatchEvent(new Event("change")); }
+});
+
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Chatbot Logic
+// ════════════════════════════════════════════════════════════════════════════
+const fab        = document.getElementById("chatbotFab");
+const panel      = document.getElementById("chatbotPanel");
+const closeBtn   = document.getElementById("chatbotClose");
+const messages   = document.getElementById("chatbotMessages");
+const inputEl    = document.getElementById("chatbotInput");
+const sendBtn    = document.getElementById("chatbotSend");
+const typingEl   = document.getElementById("chatbotTyping");
+const badge      = document.getElementById("chatbotBadge");
+const modeBtns   = document.querySelectorAll(".chatbot-mode-btn");
+const hintText   = document.getElementById("modeHintText");
+
+let currentMode    = "general";
+let currentContext = {};
+let panelOpen      = false;
+
+const MODE_HINTS = {
+  general:         "Ask me anything about brain tumors.",
+  result_analysis: "Ask me to explain your scan result or Grad-CAM heatmap.",
+  comparative:     "Ask me to 'show similar cases' from the dataset."
+};
+
+fab.addEventListener("click", () => {
+  panelOpen = !panelOpen;
+  panel.classList.toggle("open", panelOpen);
+  panel.setAttribute("aria-hidden", String(!panelOpen));
+  fab.classList.toggle("active", panelOpen);
+  badge.hidden = true;
+  if (panelOpen) inputEl.focus();
+});
+
+closeBtn.addEventListener("click", () => {
+  panelOpen = false;
+  panel.classList.remove("open");
+  panel.setAttribute("aria-hidden", "true");
+  fab.classList.remove("active");
+});
+
+modeBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    modeBtns.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentMode = btn.dataset.mode;
+    hintText.textContent = MODE_HINTS[currentMode];
+
+    if (currentMode === "result_analysis" && currentPrediction) {
+      addMessage("bot", `I can explain the <b>${currentPrediction.tumor_type}</b> detection result. What would you like to know? (e.g., "Why this result?", "Explain the heatmap")`);
+    } else if (currentMode === "comparative" && currentPrediction) {
+      addMessage("bot", `Ready to compare! Ask me to "show similar cases" for <b>${currentPrediction.tumor_type}</b>.`);
+    } else if (currentMode !== "general" && !currentPrediction) {
+      addMessage("bot", "Please run a detection first, then switch to this mode for result-specific answers.");
+    }
+  });
+});
+
+sendBtn.addEventListener("click", sendChat);
+inputEl.addEventListener("keydown", e => { if (e.key === "Enter") sendChat(); });
+
+function sendChat() {
+  const msg = inputEl.value.trim();
+  if (!msg) return;
+  addMessage("user", msg);
+  inputEl.value = "";
+
+  if (currentPrediction) {
+    currentContext = {
+      tumor_type:          currentPrediction.tumor_type,
+      confidence:          currentPrediction.highest_confidence,
+      activation_region:   currentPrediction.gradcam?.activation_analysis?.peak_region || "unspecified",
+      conv_layer:          currentPrediction.gradcam?.conv_layer_used || "last conv layer",
+      activation_analysis: currentPrediction.gradcam?.activation_analysis || {}
+    };
+  }
+
+  typingEl.hidden = false;
+  messages.scrollTop = messages.scrollHeight;
+
+  fetch("/chat", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: msg, mode: currentMode, context: currentContext })
+  })
+  .then(r => r.json())
+  .then(data => {
+    typingEl.hidden = true;
+    addMessage("bot", data.reply || "Sorry, I could not process that.");
+  })
+  .catch(() => {
+    typingEl.hidden = true;
+    addMessage("bot", "Network error. Please try again.");
+  });
+}
+
+function addMessage(sender, html) {
+  const div = document.createElement("div");
+  div.className = `chatbot-msg ${sender}`;
+  div.innerHTML = `
+    <div class="chatbot-msg-avatar">
+      ${sender === "bot" ? '<i class="fas fa-brain"></i>' : '<i class="fas fa-user"></i>'}
+    </div>
+    <div class="chatbot-msg-bubble">${html}</div>`;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function _onDetectionComplete(prediction) {
+  if (prediction.has_tumor) {
+    if (!panelOpen) badge.removeAttribute("hidden");
+    setTimeout(() => {
+      if (!panelOpen) return;
+      addMessage("bot",
+        `Detection complete! <b>${prediction.tumor_type}</b> detected with <b>${prediction.highest_confidence}</b> confidence.<br/>
+         Switch to <b>Result Analysis</b> mode to get a detailed explanation.`);
+    }, 800);
+  }
+}
+</script>
+
+</body>
+</html>

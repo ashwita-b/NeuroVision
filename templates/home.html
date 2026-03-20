@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeuroVision:MRI Based Tumor Analysis</title>
+  <link rel="icon" href="{{ url_for('static', filename='fav.jpg') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='chatbot.css') }}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body>
+
+<!-- ─── Header ──────────────────────────────────────────────────────────── -->
+<header class="header">
+  <div class="logo"><i class="fa-solid fa-brain"></i></div>
+  <div class="header-text">
+    <h1>NeuroVision:MRI Based Tumor Analysis</h1>
+  </div>
+  <nav class="nav-links">
+    <a href="{{ url_for('home') }}" class="active">Home</a>
+    <a href="{{ url_for('detection') }}">Detection</a>
+    <a href="{{ url_for('logout') }}" class="logout-btn">
+      <i class="fas fa-sign-out-alt"></i> Logout
+    </a>
+  </nav>
+</header>
+
+<!-- ─── Hero ────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <h1>EMPOWERING DOCTORS WITH<br/>INTELLIGENT DIAGNOSTICS</h1>
+    <p>Advanced AI technology that analyzes brain MRI scans in seconds,
+       supporting faster and more confident clinical decisions.</p>
+  </div>
+</section>
+
+<!-- ─── Info Section ────────────────────────────────────────────────────── -->
+<section class="info-section">
+
+  <!-- About Brain Tumor -->
+  <div class="info-box">
+    <div class="info-left">
+      <img src="{{ url_for('static', filename='brain.jpeg') }}" alt="Brain Tumor" />
+    </div>
+    <div class="info-right">
+      <h2>About Brain Tumors</h2>
+      <p class="short-text">
+        A brain tumor is an abnormal growth of cells inside the brain or
+        surrounding tissues. Early diagnosis plays a critical role in treatment success.
+      </p>
+      <p class="more-text">
+        <strong>Definition:</strong> A brain tumor occurs when abnormal cells grow
+        uncontrollably within the brain or nearby structures. Tumors can be
+        <strong>primary</strong> (originating in the brain) or <strong>secondary</strong>
+        (metastatic, spreading from other organs).<br/><br/>
+        <strong>Types of Brain Tumors:</strong><br/>
+        • <strong>Gliomas:</strong> Develop from glial cells and include astrocytoma,
+          oligodendroglioma, and glioblastoma.<br/>
+        • <strong>Meningiomas:</strong> Arise from the meninges; usually benign and slow-growing.<br/>
+        • <strong>Pituitary Tumors:</strong> Affect hormone production and gland function.<br/>
+        • <strong>Pineal Tumors:</strong> Rare tumors near the pineal gland.<br/><br/>
+        Tumors are graded by the World Health Organization (Grade I–IV) based on aggressiveness.
+        Deep learning models applied to MRI images can classify tumor types with high accuracy,
+        supporting faster diagnosis and treatment planning.
+      </p>
+      <button class="see-more">See More</button>
+    </div>
+  </div>
+
+  <!-- Signs & Symptoms -->
+  <div class="info-box reverse">
+    <div class="info-left">
+      <img src="{{ url_for('static', filename='sign.jpeg') }}" alt="Symptoms" />
+    </div>
+    <div class="info-right">
+      <h2>Signs &amp; Symptoms</h2>
+      <p class="short-text">
+        Symptoms depend on tumor size, type, and location within the brain.
+        Some symptoms develop gradually, while others appear suddenly.
+      </p>
+      <p class="more-text">
+        Common signs and symptoms of brain tumors include persistent or worsening
+        headaches, especially in the morning, seizures, nausea or vomiting, blurred
+        or double vision, and difficulty with balance or coordination. Patients may
+        also experience weakness or numbness in the arms or legs, speech difficulties,
+        memory problems, confusion, personality changes, or hearing loss.
+      </p>
+      <button class="see-more">See More</button>
+    </div>
+  </div>
+
+  <!-- How System Works -->
+  <div class="info-box">
+    <div class="info-left">
+      <img src="{{ url_for('static', filename='AI.jpeg') }}" alt="AI System" />
+    </div>
+    <div class="info-right">
+      <h2>How the System Works</h2>
+      <p class="short-text">
+        NeuroVision uses artificial intelligence to assist doctors in brain
+        tumor detection through MRI analysis.
+      </p>
+      <p class="more-text">
+        The NeuroVision system allows users to upload MRI brain images through a
+        secure web interface. The uploaded image undergoes preprocessing such as
+        resizing and normalization before being passed to a trained deep learning
+        model (VGG16). The model analyzes the MRI scan to detect abnormal patterns
+        and predicts whether a tumor is present. The system outputs the predicted
+        tumor class along with a confidence score, helping clinicians make informed
+        decisions. An integrated AI chatbot (NeuroBot) provides educational answers
+        and explains model predictions interactively.
+      </p>
+      <button class="see-more">See More</button>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-section">
+    <h2>Ready to Start Diagnosis?</h2>
+    <p>Use our AI-powered detection tool to analyze MRI scans</p>
+    <a href="{{ url_for('detection') }}" class="cta-button">
+      <i class="fas fa-magnifying-glass"></i> Go to Detection Tool
+    </a>
+  </div>
+
+</section>
+
+<!-- ─── Footer ──────────────────────────────────────────────────────────── -->
+<footer class="footer">
+  <h2>NeuroVision</h2>
+  <p>© 2025 NeuroVision. For medical professional use only.</p>
+  <p class="footer-note"><i class="fas fa-lock"></i> Secure AI Diagnostic Platform</p>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!--  CHATBOT – FAB + Panel (General / Educational mode only on home page)  -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+
+<!-- FAB Button -->
+<button class="chatbot-fab" id="chatbotFab" title="Ask NeuroBot" aria-label="Open chat assistant">
+  <i class="fas fa-comment-medical" style="font-size:24px;"></i>
+</button>
+
+<!-- Chat Panel -->
+<div class="chatbot-panel" id="chatbotPanel" aria-hidden="true">
+  <div class="chatbot-panel-header">
+    <div class="chatbot-panel-title">
+      <div class="chatbot-avatar-sm"><i class="fas fa-brain"></i></div>
+      <div>
+        <strong>NeuroBot</strong>
+        <small>Brain Tumor Assistant</small>
+      </div>
+    </div>
+    <div class="chatbot-panel-actions">
+      <button class="chatbot-close-btn" id="chatbotClose" aria-label="Close chat">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="chatbot-mode-hint" id="chatbotModeHint">
+    <i class="fas fa-info-circle"></i>
+    <span>Ask me anything about brain tumors, symptoms, or treatments.</span>
+  </div>
+
+  <div class="chatbot-messages" id="chatbotMessages">
+    <div class="chatbot-msg bot">
+      <div class="chatbot-msg-avatar"><i class="fas fa-brain"></i></div>
+      <div class="chatbot-msg-bubble">
+        Hello! I'm NeuroBot. 🧠<br/>
+        I can answer questions about brain tumors, types, symptoms,
+        and how NeuroVision works.<br/><br/>
+        Try asking: <em>"What is a meningioma?"</em> or <em>"How does Grad-CAM work?"</em>
+      </div>
+    </div>
+  </div>
+
+  <div class="chatbot-typing" id="chatbotTyping" hidden>
+    <span></span><span></span><span></span>
+  </div>
+
+  <div class="chatbot-input-area">
+    <input type="text" id="chatbotInput" placeholder="Ask about brain tumors..." autocomplete="off" />
+    <button id="chatbotSend" aria-label="Send">
+      <i class="fas fa-paper-plane"></i>
+    </button>
+  </div>
+</div>
+
+<!-- ─── Scripts ──────────────────────────────────────────────────────────── -->
+<script>
+// See More / Less
+document.querySelectorAll(".see-more").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const moreText = btn.previousElementSibling;
+    moreText.classList.toggle("show");
+    btn.textContent = btn.textContent === "See More" ? "See Less" : "See More";
+  });
+});
+
+// Intersection observer for info boxes
+const boxes = document.querySelectorAll(".info-box");
+const observer = new IntersectionObserver(
+  entries => entries.forEach(e => e.target.classList.toggle("show", e.isIntersecting)),
+  { threshold: 0.2 }
+);
+boxes.forEach(b => observer.observe(b));
+
+// ── Chatbot (General mode only on home page) ─────────────────────────────────
+const fab      = document.getElementById("chatbotFab");
+const panel    = document.getElementById("chatbotPanel");
+const closeBtn = document.getElementById("chatbotClose");
+const messages = document.getElementById("chatbotMessages");
+const inputEl  = document.getElementById("chatbotInput");
+const sendBtn  = document.getElementById("chatbotSend");
+const typingEl = document.getElementById("chatbotTyping");
+let panelOpen  = false;
+
+fab.addEventListener("click", () => {
+  panelOpen = !panelOpen;
+  panel.classList.toggle("open", panelOpen);
+  panel.setAttribute("aria-hidden", String(!panelOpen));
+  fab.classList.toggle("active", panelOpen);
+  if (panelOpen) inputEl.focus();
+});
+
+closeBtn.addEventListener("click", () => {
+  panelOpen = false;
+  panel.classList.remove("open");
+  panel.setAttribute("aria-hidden", "true");
+  fab.classList.remove("active");
+});
+
+sendBtn.addEventListener("click", sendChat);
+inputEl.addEventListener("keydown", e => { if (e.key === "Enter") sendChat(); });
+
+function sendChat() {
+  const msg = inputEl.value.trim();
+  if (!msg) return;
+  addMessage("user", msg);
+  inputEl.value = "";
+  typingEl.hidden = false;
+  messages.scrollTop = messages.scrollHeight;
+
+  fetch("/chat", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: msg, mode: "general", context: {} })
+  })
+  .then(r => r.json())
+  .then(data => {
+    typingEl.hidden = true;
+    addMessage("bot", data.reply || "Sorry, I could not process that.");
+  })
+  .catch(() => {
+    typingEl.hidden = true;
+    addMessage("bot", "Network error. Please try again.");
+  });
+}
+
+function addMessage(sender, html) {
+  const div = document.createElement("div");
+  div.className = `chatbot-msg ${sender}`;
+  div.innerHTML = `
+    <div class="chatbot-msg-avatar">
+      ${sender === "bot" ? '<i class="fas fa-brain"></i>' : '<i class="fas fa-user"></i>'}
+    </div>
+    <div class="chatbot-msg-bubble">${html}</div>`;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+</script>
+
+</body>
+</html>

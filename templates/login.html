@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NeuroVision:MRI Based Tumor Analysis</title>
+
+    <!-- CSS Links -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='auth.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="icon" href="{{ url_for('static', filename='fav.jpg') }}" />
+
+    <!-- Fallback CSS if main file fails -->
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: Arial, sans-serif;
+        background: #f5f8ff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="medical-container">
+      <div class="content-wrapper">
+        <!-- Left Welcome Panel -->
+        <div class="welcome-panel">
+          <div class="welcome-content">
+            <h2>Welcome to NeuroVision</h2>
+            <p>AI-Powered Brain Tumor Detection System</p>
+            <div class="welcome-icon"><i class="fas fa-stethoscope"></i></div>
+          </div>
+        </div>
+
+        <!-- Right Form Section -->
+        <div class="form-section">
+          <!-- Form Tabs -->
+          <div class="form-tabs">
+            <a href="#login" class="tab-btn active"
+              ><i class="fas fa-sign-in-alt"></i> Login</a
+            >
+            <a href="#register" class="tab-btn"
+              ><i class="fas fa-user-plus"></i> Register</a
+            >
+          </div>
+
+          <div class="forms-container">
+            <!-- LOGIN FORM -->
+            <form
+              method="POST"
+              action="{{ url_for('login') }}"
+              class="form active"
+              id="login"
+            >
+              {% if error %}
+              <div class="error-message">
+                <i class="fas fa-exclamation-circle"></i> {{ error }}
+              </div>
+              {% endif %}
+
+              <div class="input-group">
+                <div class="input-icon"><i class="fas fa-envelope"></i></div>
+                <input
+                  type="email"
+                  name="username"
+                  placeholder="Email Address"
+                  required
+                  autocomplete="email"
+                />
+              </div>
+
+              <div class="input-group">
+                <div class="input-icon"><i class="fas fa-lock"></i></div>
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="Password"
+                  required
+                  autocomplete="current-password"
+                />
+              </div>
+
+              <div class="form-options">
+                <label class="checkbox-label">
+                  <input type="checkbox" name="remember" />
+                  <span>Remember me</span>
+                </label>
+                <a href="#" class="link-text">Forgot password?</a>
+              </div>
+
+              <button type="submit" class="submit-btn">
+                <i class="fas fa-sign-in-alt"></i> Login
+              </button>
+
+              <div class="form-footer">
+                <p>
+                  Don't have an account?
+                  <a href="#register" class="switch-form">Register here</a>
+                </p>
+              </div>
+            </form>
+
+            <!-- REGISTER FORM -->
+            <form
+              method="POST"
+              action="{{ url_for('login') }}"
+              class="form"
+              id="register"
+            >
+              {% if register_error %}
+              <div class="error-message">
+                <i class="fas fa-exclamation-circle"></i> {{ register_error }}
+              </div>
+              {% endif %} {% if success_message %}
+              <div class="success-message">
+                <i class="fas fa-check-circle"></i> {{ success_message }}
+              </div>
+              {% endif %}
+
+              <!-- Add this CSS to auth.css or in style tag -->
+              <style>
+                .success-message {
+                  background: #d4edda;
+                  color: #155724;
+                  padding: 12px;
+                  border-radius: 6px;
+                  margin-bottom: 20px;
+                  border-left: 4px solid #28a745;
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                }
+
+                .success-message i {
+                  font-size: 18px;
+                }
+              </style>
+
+              <div class="input-group">
+                <div class="input-icon"><i class="fas fa-user"></i></div>
+                <input
+                  type="text"
+                  name="fullname"
+                  placeholder="Full Name"
+                  required
+                  autocomplete="name"
+                />
+              </div>
+
+              <div class="input-group">
+                <div class="input-icon"><i class="fas fa-envelope"></i></div>
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Email Address"
+                  required
+                  autocomplete="email"
+                />
+              </div>
+
+              <div class="input-group">
+                <div class="input-icon"><i class="fas fa-lock"></i></div>
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="Password (minimum 6 characters)"
+                  required
+                  minlength="6"
+                  autocomplete="new-password"
+                />
+              </div>
+
+              <div class="input-group">
+                <div class="input-icon"><i class="fas fa-lock"></i></div>
+                <input
+                  type="password"
+                  name="confirm_password"
+                  placeholder="Confirm Password"
+                  required
+                  autocomplete="new-password"
+                />
+              </div>
+
+              <div class="checkbox-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" name="terms" required />
+                  <span>I agree to the Terms & Conditions</span>
+                </label>
+              </div>
+
+              <button type="submit" class="submit-btn">
+                <i class="fas fa-user-plus"></i> Register
+              </button>
+
+              <div class="form-footer">
+                <p>
+                  Already have an account?
+                  <a href="#login" class="switch-form">Login here</a>
+                </p>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JavaScript for Form Switching -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("NeuroVision Login Page Loaded");
+
+        // Tab switching
+        const tabBtns = document.querySelectorAll(".tab-btn");
+        const forms = document.querySelectorAll(".form");
+        const switchLinks = document.querySelectorAll(".switch-form");
+
+        // Function to switch forms
+        function switchForm(targetId) {
+          // Update active tab
+          tabBtns.forEach((btn) => {
+            btn.classList.remove("active");
+            if (btn.getAttribute("href") === "#" + targetId) {
+              btn.classList.add("active");
+            }
+          });
+
+          // Show target form
+          forms.forEach((form) => {
+            form.classList.remove("active");
+            if (form.id === targetId) {
+              form.classList.add("active");
+            }
+          });
+
+          // Scroll to top of form
+          document.querySelector(".form-section").scrollTop = 0;
+        }
+
+        // Tab button clicks
+        tabBtns.forEach((btn) => {
+          btn.addEventListener("click", function (e) {
+            e.preventDefault();
+            const targetId = this.getAttribute("href").substring(1);
+            switchForm(targetId);
+          });
+        });
+
+        // Switch form links
+        switchLinks.forEach((link) => {
+          link.addEventListener("click", function (e) {
+            e.preventDefault();
+            const targetId = this.getAttribute("href").substring(1);
+            switchForm(targetId);
+          });
+        });
+
+        // Form validation
+        const registerForm = document.getElementById("register");
+        if (registerForm) {
+          registerForm.addEventListener("submit", function (e) {
+            const password = this.querySelector('input[name="password"]').value;
+            const confirmPassword = this.querySelector(
+              'input[name="confirm_password"]',
+            ).value;
+            const terms = this.querySelector('input[name="terms"]').checked;
+
+            if (password.length < 6) {
+              alert("❌ Password must be at least 6 characters");
+              e.preventDefault();
+              return false;
+            }
+
+            if (password !== confirmPassword) {
+              alert("❌ Passwords do not match");
+              e.preventDefault();
+              return false;
+            }
+
+            if (!terms) {
+              alert("❌ You must agree to the Terms & Conditions");
+              e.preventDefault();
+              return false;
+            }
+
+            // Show loading state
+            const submitBtn = this.querySelector(".submit-btn");
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML =
+              '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
+            submitBtn.disabled = true;
+
+            // Re-enable after 5 seconds if submission fails
+            setTimeout(() => {
+              submitBtn.innerHTML = originalText;
+              submitBtn.disabled = false;
+            }, 5000);
+          });
+        }
+
+        // Login form loading state
+        const loginForm = document.getElementById("login");
+        if (loginForm) {
+          loginForm.addEventListener("submit", function (e) {
+            const submitBtn = this.querySelector(".submit-btn");
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML =
+              '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
+            submitBtn.disabled = true;
+
+            // Re-enable after 5 seconds if submission fails
+            setTimeout(() => {
+              submitBtn.innerHTML = originalText;
+              submitBtn.disabled = false;
+            }, 5000);
+          });
+        }
+
+        // Check URL hash on page load
+        const hash = window.location.hash.substring(1);
+        if (hash === "register" || hash === "login") {
+          switchForm(hash);
+        }
+      });
+    </script>
+  </body>
+</html>
