@@ -5,7 +5,9 @@
   <title>NeurVision:MRI Based Tumor Analysis</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='detection.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='chatbot.css') }}" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+  />
   <link rel="icon" href="{{ url_for('static', filename='fav.jpg') }}" />
 </head>
 <body>
@@ -66,7 +68,6 @@
       <ul class="history-list" id="historyList"></ul>
     </div>
   </div>
-
 </section>
 
 <!-- ─── Grad-CAM Modal (2-panel: Raw | Heatmap) ─────────────────────────── -->
@@ -74,30 +75,31 @@
   <div class="modal-content-large">
     <span class="close">&times;</span>
     <h2 class="modal-title">Grad-CAM Class Activation Mapping</h2>
-
-    <div class="gradcam-three-panel">
+    <div class="gradcam-two-panel">
 
       <!-- Panel 1: Raw Image -->
       <div class="gradcam-panel">
         <div class="panel-header">Raw Image</div>
-        <div class="panel-image-container">
-          <img id="rawImage" alt="Raw MRI" />
-        </div>
-        <div class="panel-info">
+        <!-- ★ CHANGE 2: label info moved ABOVE the image so it's always visible -->
+        <div class="panel-info panel-info--top">
           <div class="info-label">Actual Label</div>
           <div class="info-value" id="actualLabel">Loading...</div>
+        </div>
+        <div class="panel-image-container">
+          <img id="rawImage" alt="Raw MRI" />
         </div>
       </div>
 
       <!-- Panel 2: Pure Heatmap -->
       <div class="gradcam-panel">
         <div class="panel-header">Class Activation Heatmap</div>
-        <div class="panel-image-container">
-          <img id="heatmapImage" alt="Pure Heatmap" />
-        </div>
-        <div class="panel-info">
+        <!-- ★ CHANGE 2: confidence info also above the image -->
+        <div class="panel-info panel-info--top">
           <div class="info-label">Confidence</div>
           <div class="info-value confidence" id="confidenceValue">Loading...</div>
+        </div>
+        <div class="panel-image-container">
+          <img id="heatmapImage" alt="Pure Heatmap" />
         </div>
       </div>
 
@@ -122,7 +124,7 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!--  CHATBOT – FAB + Panel                                                -->
+<!--  CHATBOT -- FAB + Panel                                                 -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
 
 <button class="chatbot-fab" id="chatbotFab" title="Ask NeuroBot" aria-label="Open chat assistant">
@@ -131,6 +133,7 @@
 </button>
 
 <div class="chatbot-panel" id="chatbotPanel" aria-hidden="true">
+
   <div class="chatbot-panel-header">
     <div class="chatbot-panel-title">
       <div class="chatbot-avatar-sm"><i class="fas fa-brain"></i></div>
@@ -139,37 +142,34 @@
         <small>Brain Tumor Assistant</small>
       </div>
     </div>
+    <!-- ★ CHANGE 3: only close button — mode buttons removed -->
     <div class="chatbot-panel-actions">
-      <button class="chatbot-mode-btn active" id="modeGeneral"     data-mode="general"         title="General Q&A">
-        <i class="fas fa-book-medical"></i>
-      </button>
-      <button class="chatbot-mode-btn"        id="modeResult"      data-mode="result_analysis"  title="Explain Result">
-        <i class="fas fa-microscope"></i>
-      </button>
-      <button class="chatbot-mode-btn"        id="modeComparative" data-mode="comparative"      title="Compare Cases">
-        <i class="fas fa-layer-group"></i>
-      </button>
       <button class="chatbot-close-btn" id="chatbotClose" aria-label="Close chat">
         <i class="fas fa-times"></i>
       </button>
     </div>
   </div>
 
-  <div class="chatbot-mode-hint" id="chatbotModeHint">
-    <i class="fas fa-info-circle"></i>
-    <span id="modeHintText">Ask me anything about brain tumors.</span>
-  </div>
+  <!-- ★ CHANGE 3: mode hint bar removed -->
 
   <div class="chatbot-messages" id="chatbotMessages">
     <div class="chatbot-msg bot">
       <div class="chatbot-msg-avatar"><i class="fas fa-brain"></i></div>
       <div class="chatbot-msg-bubble">
         Hello! I'm NeuroBot. 🧠<br/>
-        Use the buttons above to switch between:<br/>
-        📖 <b>General</b> – brain tumor education<br/>
-        🔬 <b>Result Analysis</b> – explain your scan result<br/>
-        📊 <b>Compare</b> – find similar dataset cases
+        Tap a question below or type your own:
       </div>
+    </div>
+
+    <!-- ★ CHANGE 3: clickable preset questions -->
+    <div class="preset-questions" id="presetQuestions">
+      <button class="preset-q" data-mode="general"         data-q="What is a brain tumor?">What is a brain tumor?</button>
+      <button class="preset-q" data-mode="general"         data-q="What are the types of brain tumors?">Types of brain tumors</button>
+      <button class="preset-q" data-mode="result_analysis" data-q="Explain my scan result">Explain my scan result</button>
+      <button class="preset-q" data-mode="result_analysis" data-q="What does the heatmap show?">What does the heatmap show?</button>
+      <button class="preset-q" data-mode="result_analysis" data-q="How confident is the model?">How confident is the model?</button>
+      <button class="preset-q" data-mode="comparative"     data-q="Show similar cases from the dataset">Show similar cases</button>
+      <button class="preset-q" data-mode="comparative"     data-q="How does my case differ from others?">How does my case differ?</button>
     </div>
   </div>
 
@@ -183,13 +183,16 @@
       <i class="fas fa-paper-plane"></i>
     </button>
   </div>
+
 </div>
 
 <!-- ─── Scripts ──────────────────────────────────────────────────────────── -->
 <script>
+
 // ════════════════════════════════════════════════════════════════════════════
 //  Detection Logic
 // ════════════════════════════════════════════════════════════════════════════
+
 const uploadBox       = document.getElementById("uploadBox");
 const imageInput      = document.getElementById("imageInput");
 const previewImage    = document.getElementById("previewImage");
@@ -233,22 +236,14 @@ function showGradcam() {
     alert("Grad-CAM visualization is not available for this analysis.");
     return;
   }
-
-  // Panel 1: raw image
   rawImage.src = previewImage.src;
-
-  // Panel 2: pure heatmap
   if (currentGradcamData.heatmap) {
     heatmapImage.src = currentGradcamData.heatmap;
   }
-
-  // Labels
   actualLabel.textContent = currentPrediction.tumor_type;
   actualLabel.className   = currentPrediction.tumor_type === "No Tumor"
     ? "info-value label-negative" : "info-value label-positive";
-
   confidenceValue.textContent = currentPrediction.highest_confidence;
-
   modal.style.display = "block";
 }
 
@@ -257,11 +252,13 @@ analyzeBtn.addEventListener("click", detectTumor);
 
 function detectTumor() {
   if (!imageInput.files.length) { alert("Please upload an MRI image first."); return; }
+
   const file   = imageInput.files[0];
   const reader = new FileReader();
 
   reader.onload = () => {
     const base64String = reader.result;
+
     resultContent.innerHTML = `
       <i class="fas fa-spinner fa-spin" style="font-size:50px;"></i>
       <h3>Analyzing MRI Scan...</h3>
@@ -288,11 +285,21 @@ function detectTumor() {
       outputBox.style.background = prediction.tumor_type === "No Tumor" ? "#d1fae5" : "#fee2e2";
 
       if (hc >= 50) {
+        const isTumor = prediction.tumor_type !== "No Tumor";
+
+        // ★ CHANGE 1 – interactive detection label
         resultContent.innerHTML = `
-          <div class="result-header ${prediction.tumor_type === "No Tumor" ? "no-tumor" : "tumor-detected"}">
-            <i class="fas ${prediction.tumor_type === "No Tumor" ? "fa-check-circle" : "fa-exclamation-triangle"}"></i>
-            <h2>${prediction.tumor_type.toUpperCase()}</h2>
-            <div class="confidence-badge">Confidence: ${prediction.highest_confidence}</div>
+          <div class="result-label-card ${isTumor ? 'tumor-detected' : 'no-tumor'}">
+            <div class="result-label-icon">
+              <i class="fas ${isTumor ? 'fa-circle-exclamation' : 'fa-circle-check'}"></i>
+            </div>
+            <div class="result-label-text">
+              <span class="result-type-name">${prediction.tumor_type.toUpperCase()}</span>
+              <span class="result-confidence-pill">
+                <i class="fas fa-chart-simple"></i>
+                ${prediction.highest_confidence} confidence
+              </span>
+            </div>
           </div>
           <div class="result-message">
             ${prediction.tumor_type === "No Tumor"
@@ -300,11 +307,11 @@ function detectTumor() {
               : `<strong>${prediction.tumor_type}</strong> detected. Please consult a medical professional.`}
           </div>`;
 
-        // Show Grad-CAM button if tumor detected and gradcam available
-        if (prediction.gradcam && prediction.gradcam.generated && prediction.tumor_type !== "No Tumor") {
+        // ★ CHANGE 1 – Grad-CAM button: no fire icon, smaller
+        if (prediction.gradcam && prediction.gradcam.generated && isTumor) {
           const gradcamBtn = document.createElement("button");
           gradcamBtn.className = "gradcam-btn";
-          gradcamBtn.innerHTML = '<i class="fas fa-fire"></i> View Grad-CAM Activation Map';
+          gradcamBtn.innerHTML = '<i style="font-size:11px;"></i> View Grad-CAM Activation Map';
           gradcamBtn.onclick   = showGradcam;
           resultContent.appendChild(gradcamBtn);
         }
@@ -325,7 +332,6 @@ function detectTumor() {
           </div>`;
       }
 
-      // History entry
       const li = document.createElement("li");
       li.innerHTML = `<img src="${previewImage.src}" width="50" height="50">
         <div><strong>${prediction.tumor_type}</strong>
@@ -337,6 +343,7 @@ function detectTumor() {
       resultContent.innerHTML = `<i class="fas fa-exclamation-triangle" style="color:#ef4444;font-size:50px;"></i><h3>Network Error</h3><p>Please check your connection and try again</p>`;
     });
   };
+
   reader.readAsDataURL(file);
 }
 
@@ -348,30 +355,22 @@ uploadBox.addEventListener("drop", e => {
   if (e.dataTransfer.files.length) { imageInput.files=e.dataTransfer.files; imageInput.dispatchEvent(new Event("change")); }
 });
 
-
 // ════════════════════════════════════════════════════════════════════════════
 //  Chatbot Logic
 // ════════════════════════════════════════════════════════════════════════════
-const fab        = document.getElementById("chatbotFab");
-const panel      = document.getElementById("chatbotPanel");
-const closeBtn   = document.getElementById("chatbotClose");
-const messages   = document.getElementById("chatbotMessages");
-const inputEl    = document.getElementById("chatbotInput");
-const sendBtn    = document.getElementById("chatbotSend");
-const typingEl   = document.getElementById("chatbotTyping");
-const badge      = document.getElementById("chatbotBadge");
-const modeBtns   = document.querySelectorAll(".chatbot-mode-btn");
-const hintText   = document.getElementById("modeHintText");
+
+const fab      = document.getElementById("chatbotFab");
+const panel    = document.getElementById("chatbotPanel");
+const closeBtn = document.getElementById("chatbotClose");
+const messages = document.getElementById("chatbotMessages");
+const inputEl  = document.getElementById("chatbotInput");
+const sendBtn  = document.getElementById("chatbotSend");
+const typingEl = document.getElementById("chatbotTyping");
+const badge    = document.getElementById("chatbotBadge");
 
 let currentMode    = "general";
 let currentContext = {};
 let panelOpen      = false;
-
-const MODE_HINTS = {
-  general:         "Ask me anything about brain tumors.",
-  result_analysis: "Ask me to explain your scan result or Grad-CAM heatmap.",
-  comparative:     "Ask me to 'show similar cases' from the dataset."
-};
 
 fab.addEventListener("click", () => {
   panelOpen = !panelOpen;
@@ -389,39 +388,55 @@ closeBtn.addEventListener("click", () => {
   fab.classList.remove("active");
 });
 
-modeBtns.forEach(btn => {
+// ★ CHANGE 3 – preset question chips
+document.querySelectorAll(".preset-q").forEach(btn => {
   btn.addEventListener("click", () => {
-    modeBtns.forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    currentMode = btn.dataset.mode;
-    hintText.textContent = MODE_HINTS[currentMode];
-
-    if (currentMode === "result_analysis" && currentPrediction) {
-      addMessage("bot", `I can explain the <b>${currentPrediction.tumor_type}</b> detection result. What would you like to know? (e.g., "Why this result?", "Explain the heatmap")`);
-    } else if (currentMode === "comparative" && currentPrediction) {
-      addMessage("bot", `Ready to compare! Ask me to "show similar cases" for <b>${currentPrediction.tumor_type}</b>.`);
-    } else if (currentMode !== "general" && !currentPrediction) {
-      addMessage("bot", "Please run a detection first, then switch to this mode for result-specific answers.");
-    }
+    const q    = btn.dataset.q;
+    const mode = btn.dataset.mode;
+    currentMode = mode;
+    // hide all preset chips after first use so chat feels clean
+    document.getElementById("presetQuestions").style.display = "none";
+    sendMessage(q);
   });
 });
 
-sendBtn.addEventListener("click", sendChat);
-inputEl.addEventListener("keydown", e => { if (e.key === "Enter") sendChat(); });
+sendBtn.addEventListener("click", () => sendMessage(inputEl.value.trim(), true));
+inputEl.addEventListener("keydown", e => { if (e.key === "Enter") sendMessage(inputEl.value.trim(), true); });
 
-function sendChat() {
-  const msg = inputEl.value.trim();
+// ── Auto-detect the correct mode from free-typed message text ────────────────
+function autoDetectMode(msg) {
+  const m = msg.toLowerCase();
+
+  // Comparative keywords
+  if (/similar|comparison|compare|cases|dataset|differ|unlike|distinguish/.test(m))
+    return "comparative";
+
+  // Result/heatmap keywords — only meaningful if a scan has been run
+  if (currentPrediction &&
+      /explain|result|heatmap|grad|cam|colour|color|red|yellow|blue|focus|region|where|why|reason|confidence|sure|certain|percent|%|how confident/.test(m))
+    return "result_analysis";
+
+  // Everything else → educational general mode
+  return "general";
+}
+
+// fromUser=true means the message was typed manually (auto-detect mode)
+// fromUser=false means it was fired programmatically via a preset chip (mode already set)
+function sendMessage(msg, fromUser = false) {
   if (!msg) return;
   addMessage("user", msg);
   inputEl.value = "";
 
+  // Auto-route free-typed messages so users always get the right handler
+  if (fromUser) currentMode = autoDetectMode(msg);
+
   if (currentPrediction) {
     currentContext = {
-      tumor_type:          currentPrediction.tumor_type,
-      confidence:          currentPrediction.highest_confidence,
-      activation_region:   currentPrediction.gradcam?.activation_analysis?.peak_region || "unspecified",
-      conv_layer:          currentPrediction.gradcam?.conv_layer_used || "last conv layer",
-      activation_analysis: currentPrediction.gradcam?.activation_analysis || {}
+      tumor_type:         currentPrediction.tumor_type,
+      confidence:         currentPrediction.highest_confidence,
+      activation_region:  currentPrediction.gradcam?.activation_analysis?.peak_region || "unspecified",
+      conv_layer:         currentPrediction.gradcam?.conv_layer_used || "last conv layer",
+      activation_analysis:currentPrediction.gradcam?.activation_analysis || {}
     };
   }
 
@@ -461,13 +476,14 @@ function _onDetectionComplete(prediction) {
     if (!panelOpen) badge.removeAttribute("hidden");
     setTimeout(() => {
       if (!panelOpen) return;
+      currentMode = "result_analysis";
       addMessage("bot",
         `Detection complete! <b>${prediction.tumor_type}</b> detected with <b>${prediction.highest_confidence}</b> confidence.<br/>
-         Switch to <b>Result Analysis</b> mode to get a detailed explanation.`);
+         Ask me about the result — try <em>"Explain my scan result"</em> or <em>"What does the heatmap show?"</em>`);
     }, 800);
   }
 }
-</script>
 
+</script>
 </body>
 </html>
