@@ -1,19 +1,21 @@
 [
   {
-    "tumor_type": "Glioma",
-    "class_index": 0,
+    "tumor_type": "Meningioma",
+    "class_index": 1,
     "conv_layer_used": "conv2d_12",
-    "confidence": 73.68,
+    "confidence": 94.5,
     "activation_analysis": {
-      "peak_region": "lower-right",
-      "activation_percentage": 33.6,
-      "high_area_percentage": 5.3,
-      "focus_description": "Model focused on the lower-right (33.6% of total activation). ~5.3% of image shows high activation (>70% of peak).",
-      "clinical_context": "In Glioma cases, activation expected in cerebral cortex or white matter. Typical features: irregular margins and infiltrative pattern.",
-      "match_reason": "Gliomas show diffuse infiltration. High cortical/subcortical activation expected.",
-      "heatmap_interpretation": "Red/yellow = highest activation (most influential for 'Glioma' at 73.7% confidence). Blue/dark = minimal contribution."
+      "peak_region": "lower-left",
+      "activation_percentage": 33.3,
+      "high_area_percentage": 1.5,
+      "focus_description": "Model focused on the lower-left (33.3% of total activation). ~1.5% of image shows high activation (>70% of peak).",
+      "clinical_context": "In Meningioma cases, activation expected in brain surface or falx cerebri. Typical features: well-defined margins and dural tail sign.",
+      "match_reason": "Meningiomas arise from meninges. Peripheral convexity activation is characteristic.",
+      "heatmap_interpretation": "Red/yellow = highest activation (most influential for 'Meningioma' at 94.5% confidence). Blue/dark = minimal contribution."
     },
-    "generated": true
+    "generated": true,
+    "user": "anonymous",
+    "timestamp": "2026-03-21 11:46:32"
   },
   {
     "tumor_type": "Meningioma",
@@ -31,7 +33,97 @@
     },
     "generated": true,
     "user": "anonymous",
-    "timestamp": "2026-03-20 22:34:15"
+    "timestamp": "2026-03-21 11:48:37"
+  },
+  {
+    "tumor_type": "Glioma",
+    "class_index": 0,
+    "conv_layer_used": "conv2d_12",
+    "confidence": 73.68,
+    "activation_analysis": {
+      "peak_region": "lower-right",
+      "activation_percentage": 33.6,
+      "high_area_percentage": 5.3,
+      "focus_description": "Model focused on the lower-right (33.6% of total activation). ~5.3% of image shows high activation (>70% of peak).",
+      "clinical_context": "In Glioma cases, activation expected in cerebral cortex or white matter. Typical features: irregular margins and infiltrative pattern.",
+      "match_reason": "Gliomas show diffuse infiltration. High cortical/subcortical activation expected.",
+      "heatmap_interpretation": "Red/yellow = highest activation (most influential for 'Glioma' at 73.7% confidence). Blue/dark = minimal contribution."
+    },
+    "generated": true,
+    "user": "anonymous",
+    "timestamp": "2026-03-21 11:48:37"
+  },
+  {
+    "tumor_type": "Glioma",
+    "class_index": 0,
+    "conv_layer_used": "conv2d_12",
+    "confidence": 73.68,
+    "activation_analysis": {
+      "peak_region": "lower-right",
+      "activation_percentage": 33.6,
+      "high_area_percentage": 5.3,
+      "focus_description": "Model focused on the lower-right (33.6% of total activation). ~5.3% of image shows high activation (>70% of peak).",
+      "clinical_context": "In Glioma cases, activation expected in cerebral cortex or white matter. Typical features: irregular margins and infiltrative pattern.",
+      "match_reason": "Gliomas show diffuse infiltration. High cortical/subcortical activation expected.",
+      "heatmap_interpretation": "Red/yellow = highest activation (most influential for 'Glioma' at 73.7% confidence). Blue/dark = minimal contribution."
+    },
+    "generated": true,
+    "user": "anonymous",
+    "timestamp": "2026-03-21 11:56:23"
+  },
+  {
+    "tumor_type": "Glioma",
+    "class_index": 0,
+    "conv_layer_used": "conv2d_12",
+    "confidence": 99.88,
+    "activation_analysis": {
+      "peak_region": "upper-left",
+      "activation_percentage": 36.4,
+      "high_area_percentage": 2.2,
+      "focus_description": "Model focused on the upper-left (36.4% of total activation). ~2.2% of image shows high activation (>70% of peak).",
+      "clinical_context": "In Glioma cases, activation expected in cerebral cortex or white matter. Typical features: irregular margins and infiltrative pattern.",
+      "match_reason": "Gliomas show diffuse infiltration. High cortical/subcortical activation expected.",
+      "heatmap_interpretation": "Red/yellow = highest activation (most influential for 'Glioma' at 99.9% confidence). Blue/dark = minimal contribution."
+    },
+    "generated": true,
+    "user": "anonymous",
+    "timestamp": "2026-03-21 11:56:23"
+  },
+  {
+    "tumor_type": "Pituitary",
+    "class_index": 3,
+    "conv_layer_used": "conv2d_12",
+    "confidence": 99.89,
+    "activation_analysis": {
+      "peak_region": "lower-left",
+      "activation_percentage": 45.8,
+      "high_area_percentage": 3.2,
+      "focus_description": "Model focused on the lower-left (45.8% of total activation). ~3.2% of image shows high activation (>70% of peak).",
+      "clinical_context": "In Pituitary cases, activation expected in sella turcica or parasellar area. Typical features: midline location and suprasellar extension.",
+      "match_reason": "Pituitary tumors are midline. Central inferior activation near the sella expected.",
+      "heatmap_interpretation": "Red/yellow = highest activation (most influential for 'Pituitary' at 99.9% confidence). Blue/dark = minimal contribution."
+    },
+    "generated": true,
+    "user": "anonymous",
+    "timestamp": "2026-03-21 12:03:27"
+  },
+  {
+    "tumor_type": "Meningioma",
+    "class_index": 1,
+    "conv_layer_used": "conv2d_12",
+    "confidence": 94.5,
+    "activation_analysis": {
+      "peak_region": "lower-left",
+      "activation_percentage": 33.3,
+      "high_area_percentage": 1.5,
+      "focus_description": "Model focused on the lower-left (33.3% of total activation). ~1.5% of image shows high activation (>70% of peak).",
+      "clinical_context": "In Meningioma cases, activation expected in brain surface or falx cerebri. Typical features: well-defined margins and dural tail sign.",
+      "match_reason": "Meningiomas arise from meninges. Peripheral convexity activation is characteristic.",
+      "heatmap_interpretation": "Red/yellow = highest activation (most influential for 'Meningioma' at 94.5% confidence). Blue/dark = minimal contribution."
+    },
+    "generated": true,
+    "user": "anonymous",
+    "timestamp": "2026-03-21 12:17:26"
   },
   {
     "tumor_type": "Glioma",
@@ -49,7 +141,7 @@
     },
     "generated": true,
     "user": "anonymous",
-    "timestamp": "2026-03-20 22:34:26"
+    "timestamp": "2026-03-21 12:23:36"
   },
   {
     "tumor_type": "Glioma",
@@ -67,79 +159,7 @@
     },
     "generated": true,
     "user": "anonymous",
-    "timestamp": "2026-03-20 22:34:32"
-  },
-  {
-    "tumor_type": "Pituitary",
-    "class_index": 3,
-    "conv_layer_used": "conv2d_12",
-    "confidence": 99.89,
-    "activation_analysis": {
-      "peak_region": "lower-left",
-      "activation_percentage": 45.8,
-      "high_area_percentage": 3.2,
-      "focus_description": "Model focused on the lower-left (45.8% of total activation). ~3.2% of image shows high activation (>70% of peak).",
-      "clinical_context": "In Pituitary cases, activation expected in sella turcica or parasellar area. Typical features: midline location and suprasellar extension.",
-      "match_reason": "Pituitary tumors are midline. Central inferior activation near the sella expected.",
-      "heatmap_interpretation": "Red/yellow = highest activation (most influential for 'Pituitary' at 99.9% confidence). Blue/dark = minimal contribution."
-    },
-    "generated": true,
-    "user": "anonymous",
-    "timestamp": "2026-03-20 22:34:42"
-  },
-  {
-    "tumor_type": "Glioma",
-    "class_index": 0,
-    "conv_layer_used": "conv2d_12",
-    "confidence": 73.68,
-    "activation_analysis": {
-      "peak_region": "lower-right",
-      "activation_percentage": 33.6,
-      "high_area_percentage": 5.3,
-      "focus_description": "Model focused on the lower-right (33.6% of total activation). ~5.3% of image shows high activation (>70% of peak).",
-      "clinical_context": "In Glioma cases, activation expected in cerebral cortex or white matter. Typical features: irregular margins and infiltrative pattern.",
-      "match_reason": "Gliomas show diffuse infiltration. High cortical/subcortical activation expected.",
-      "heatmap_interpretation": "Red/yellow = highest activation (most influential for 'Glioma' at 73.7% confidence). Blue/dark = minimal contribution."
-    },
-    "generated": true,
-    "user": "anonymous",
-    "timestamp": "2026-03-20 22:34:59"
-  },
-  {
-    "tumor_type": "Meningioma",
-    "class_index": 1,
-    "conv_layer_used": "conv2d_12",
-    "confidence": 94.5,
-    "activation_analysis": {
-      "peak_region": "lower-left",
-      "activation_percentage": 33.3,
-      "high_area_percentage": 1.5,
-      "focus_description": "Model focused on the lower-left (33.3% of total activation). ~1.5% of image shows high activation (>70% of peak).",
-      "clinical_context": "In Meningioma cases, activation expected in brain surface or falx cerebri. Typical features: well-defined margins and dural tail sign.",
-      "match_reason": "Meningiomas arise from meninges. Peripheral convexity activation is characteristic.",
-      "heatmap_interpretation": "Red/yellow = highest activation (most influential for 'Meningioma' at 94.5% confidence). Blue/dark = minimal contribution."
-    },
-    "generated": true,
-    "user": "anonymous",
-    "timestamp": "2026-03-20 22:49:49"
-  },
-  {
-    "tumor_type": "Pituitary",
-    "class_index": 3,
-    "conv_layer_used": "conv2d_12",
-    "confidence": 99.89,
-    "activation_analysis": {
-      "peak_region": "lower-left",
-      "activation_percentage": 45.8,
-      "high_area_percentage": 3.2,
-      "focus_description": "Model focused on the lower-left (45.8% of total activation). ~3.2% of image shows high activation (>70% of peak).",
-      "clinical_context": "In Pituitary cases, activation expected in sella turcica or parasellar area. Typical features: midline location and suprasellar extension.",
-      "match_reason": "Pituitary tumors are midline. Central inferior activation near the sella expected.",
-      "heatmap_interpretation": "Red/yellow = highest activation (most influential for 'Pituitary' at 99.9% confidence). Blue/dark = minimal contribution."
-    },
-    "generated": true,
-    "user": "anonymous",
-    "timestamp": "2026-03-21 08:23:00"
+    "timestamp": "2026-03-21 12:23:43"
   },
   {
     "tumor_type": "Glioma",
@@ -157,42 +177,24 @@
     },
     "generated": true,
     "user": "anonymous",
-    "timestamp": "2026-03-21 08:42:25"
+    "timestamp": "2026-03-21 12:23:46"
   },
   {
-    "tumor_type": "Meningioma",
-    "class_index": 1,
+    "tumor_type": "Glioma",
+    "class_index": 0,
     "conv_layer_used": "conv2d_12",
-    "confidence": 94.5,
+    "confidence": 99.88,
     "activation_analysis": {
-      "peak_region": "lower-left",
-      "activation_percentage": 33.3,
-      "high_area_percentage": 1.5,
-      "focus_description": "Model focused on the lower-left (33.3% of total activation). ~1.5% of image shows high activation (>70% of peak).",
-      "clinical_context": "In Meningioma cases, activation expected in brain surface or falx cerebri. Typical features: well-defined margins and dural tail sign.",
-      "match_reason": "Meningiomas arise from meninges. Peripheral convexity activation is characteristic.",
-      "heatmap_interpretation": "Red/yellow = highest activation (most influential for 'Meningioma' at 94.5% confidence). Blue/dark = minimal contribution."
+      "peak_region": "upper-left",
+      "activation_percentage": 36.4,
+      "high_area_percentage": 2.2,
+      "focus_description": "Model focused on the upper-left (36.4% of total activation). ~2.2% of image shows high activation (>70% of peak).",
+      "clinical_context": "In Glioma cases, activation expected in cerebral cortex or white matter. Typical features: irregular margins and infiltrative pattern.",
+      "match_reason": "Gliomas show diffuse infiltration. High cortical/subcortical activation expected.",
+      "heatmap_interpretation": "Red/yellow = highest activation (most influential for 'Glioma' at 99.9% confidence). Blue/dark = minimal contribution."
     },
     "generated": true,
     "user": "anonymous",
-    "timestamp": "2026-03-21 08:48:49"
-  },
-  {
-    "tumor_type": "Meningioma",
-    "class_index": 1,
-    "conv_layer_used": "conv2d_12",
-    "confidence": 94.5,
-    "activation_analysis": {
-      "peak_region": "lower-left",
-      "activation_percentage": 33.3,
-      "high_area_percentage": 1.5,
-      "focus_description": "Model focused on the lower-left (33.3% of total activation). ~1.5% of image shows high activation (>70% of peak).",
-      "clinical_context": "In Meningioma cases, activation expected in brain surface or falx cerebri. Typical features: well-defined margins and dural tail sign.",
-      "match_reason": "Meningiomas arise from meninges. Peripheral convexity activation is characteristic.",
-      "heatmap_interpretation": "Red/yellow = highest activation (most influential for 'Meningioma' at 94.5% confidence). Blue/dark = minimal contribution."
-    },
-    "generated": true,
-    "user": "anonymous",
-    "timestamp": "2026-03-21 08:50:43"
+    "timestamp": "2026-03-21 12:25:48"
   }
 ]

@@ -2,9 +2,9 @@
 app.py  --  NeuroVision: Unified Detection + Chatbot System
 ==========================================================
 All routing lives here. Heavy logic is delegated to:
-  • detection.py   -- model inference
-  • gradcam.py     -- Grad-CAM + analysis JSON
-  • chatbot_engine.py -- NLP / RAG chatbot logic
+  • detection.py       -- model inference
+  • gradcam.py         -- Grad-CAM + analysis JSON
+  • chatbot_engine.py  -- NLP / RAG chatbot logic
 """
 
 from flask import (Flask, render_template, request, redirect,
@@ -31,13 +31,13 @@ def save_users(users):
     with open(USERS_FILE, 'w') as f:
         json.dump(users, f, indent=2)
 
-def hash_password(p):   return hashlib.sha256(p.encode()).hexdigest()
-def validate_email(e):  return re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', e) is not None
+def hash_password(p):  return hashlib.sha256(p.encode()).hexdigest()
+def validate_email(e): return re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', e) is not None
 def validate_password(p):
     if len(p) < 6: return False, "Password must be at least 6 characters"
     return True, ""
 
-# ── Lazy-import detection & gradcam modules ────────────────────────────────────
+# ── Lazy-import modules ────────────────────────────────────────────────────────
 def _get_detection():
     import detection as det
     return det
@@ -173,11 +173,11 @@ def predict():
                 )
                 if analysis.get("generated"):
                     gradcam_data = {
-                        "overlay":            analysis.get("overlay_base64"),
-                        "heatmap":            analysis.get("heatmap_base64"),
-                        "activation_analysis":analysis.get("activation_analysis"),
-                        "conv_layer_used":    analysis.get("conv_layer_used"),
-                        "generated":          True,   # ← required by detection.html button
+                        "overlay":             analysis.get("overlay_base64"),
+                        "heatmap":             analysis.get("heatmap_base64"),
+                        "activation_analysis": analysis.get("activation_analysis"),
+                        "conv_layer_used":     analysis.get("conv_layer_used"),
+                        "generated":           True,
                     }
 
             # ── Persist JSON for chatbot ───────────────────────────────────────
@@ -185,12 +185,20 @@ def predict():
             if gradcam_data:
                 gc.save_analysis_json(analysis)
 
+            # ── Store latest scan timestamp in session ─────────────────────────
+            # chatbot_engine uses this to match the correct entry in the JSON files
+            scan_timestamp = det_result.get("timestamp", "")
+            if scan_timestamp:
+                session["current_scan_timestamp"] = scan_timestamp
+                session["current_tumor_type"]     = tumor_type
+
             results.append({
                 "tumor_type":         tumor_type,
                 "confidence":         det_result["confidence"],
                 "highest_confidence": det_result["highest_confidence"],
                 "has_tumor":          det_result["has_tumor"],
-                "gradcam":            gradcam_data
+                "gradcam":            gradcam_data,
+                "timestamp":          scan_timestamp,   # ← passed to frontend too
             })
 
         return jsonify({"success": True, "predictions": results, "count": len(results)})
@@ -211,14 +219,44 @@ def chat():
     body    = request.get_json() or {}
     message = body.get("message", "").strip()
     mode    = body.get("mode", "general")
-    context = body.get("context", {})
 
     if not message:
         return jsonify({"reply": "Please ask a question."})
 
-    cb = _get_chatbot()
+    # ── Build context ──────────────────────────────────────────────────────────
+    context = body.get("context", {})
+
+    # Case 1 – general: inject conversation memory from session
+    context["last_question"] = session.get("last_question", "")
+    context["chat_history"]  = session.get("chat_history",  [])
+
+    # Case 2 & 3 – result_analysis / comparative:
+    # inject the timestamp of the most recently analysed scan so chatbot_engine
+    # can look up the exact matching entry in detection_result.json and
+    # gradcam_analysis.json rather than blindly using the last entry
+    context["timestamp"] = session.get("current_scan_timestamp", "")
+
+    # ── Get reply ──────────────────────────────────────────────────────────────
+    cb    = _get_chatbot()
     reply = cb.get_reply(message, mode=mode, context=context)
+
+    # ── Update session memory (general mode only) ──────────────────────────────
+    if mode == "general":
+        history = session.get("chat_history", [])
+        history.append({"role": "user",      "content": message})
+        history.append({"role": "assistant", "content": reply})
+        session["last_question"] = message
+        session["chat_history"]  = history[-10:]   # keep last 5 turns (10 entries)
+
     return jsonify({"reply": reply})
+
+
+@app.route("/chat/reset", methods=["POST"])
+def chat_reset():
+    """Clear conversation memory. Call this when the chatbot panel is closed/reopened."""
+    session.pop("last_question", None)
+    session.pop("chat_history",  None)
+    return jsonify({"status": "memory cleared"})
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  ROUTES -- Static helpers

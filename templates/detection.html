@@ -80,7 +80,6 @@
       <!-- Panel 1: Raw Image -->
       <div class="gradcam-panel">
         <div class="panel-header">Raw Image</div>
-        <!-- ★ CHANGE 2: label info moved ABOVE the image so it's always visible -->
         <div class="panel-info panel-info--top">
           <div class="info-label">Actual Label</div>
           <div class="info-value" id="actualLabel">Loading...</div>
@@ -93,7 +92,6 @@
       <!-- Panel 2: Pure Heatmap -->
       <div class="gradcam-panel">
         <div class="panel-header">Class Activation Heatmap</div>
-        <!-- ★ CHANGE 2: confidence info also above the image -->
         <div class="panel-info panel-info--top">
           <div class="info-label">Confidence</div>
           <div class="info-value confidence" id="confidenceValue">Loading...</div>
@@ -142,15 +140,12 @@
         <small>Brain Tumor Assistant</small>
       </div>
     </div>
-    <!-- ★ CHANGE 3: only close button — mode buttons removed -->
     <div class="chatbot-panel-actions">
       <button class="chatbot-close-btn" id="chatbotClose" aria-label="Close chat">
         <i class="fas fa-times"></i>
       </button>
     </div>
   </div>
-
-  <!-- ★ CHANGE 3: mode hint bar removed -->
 
   <div class="chatbot-messages" id="chatbotMessages">
     <div class="chatbot-msg bot">
@@ -161,7 +156,6 @@
       </div>
     </div>
 
-    <!-- ★ CHANGE 3: clickable preset questions -->
     <div class="preset-questions" id="presetQuestions">
       <button class="preset-q" data-mode="general"         data-q="What is a brain tumor?">What is a brain tumor?</button>
       <button class="preset-q" data-mode="general"         data-q="What are the types of brain tumors?">Types of brain tumors</button>
@@ -207,8 +201,9 @@ const heatmapImage    = document.getElementById("heatmapImage");
 const actualLabel     = document.getElementById("actualLabel");
 const confidenceValue = document.getElementById("confidenceValue");
 
-let currentGradcamData = null;
-let currentPrediction  = null;
+let currentGradcamData  = null;
+let currentPrediction   = null;
+let currentScanTimestamp = "";   // ← stored when /predict returns
 
 // ── Image preview ────────────────────────────────────────────────────────────
 imageInput.addEventListener("change", function(e) {
@@ -230,7 +225,7 @@ imageInput.addEventListener("change", function(e) {
 closeModal.onclick = () => modal.style.display = "none";
 window.onclick = e => { if (e.target == modal) modal.style.display = "none"; };
 
-// ── Show Grad-CAM modal (2 panels: Raw + Heatmap) ────────────────────────────
+// ── Show Grad-CAM modal ───────────────────────────────────────────────────────
 function showGradcam() {
   if (!currentGradcamData) {
     alert("Grad-CAM visualization is not available for this analysis.");
@@ -277,9 +272,12 @@ function detectTumor() {
         return;
       }
 
-      const prediction   = data.predictions[0];
-      currentPrediction  = prediction;
-      currentGradcamData = prediction.gradcam;
+      const prediction    = data.predictions[0];
+      currentPrediction   = prediction;
+      currentGradcamData  = prediction.gradcam;
+
+      // ── FIX: store timestamp returned by /predict ─────────────────────────
+      currentScanTimestamp = prediction.timestamp || "";
 
       const hc = parseFloat(prediction.highest_confidence);
       outputBox.style.background = prediction.tumor_type === "No Tumor" ? "#d1fae5" : "#fee2e2";
@@ -287,7 +285,6 @@ function detectTumor() {
       if (hc >= 50) {
         const isTumor = prediction.tumor_type !== "No Tumor";
 
-        // ★ CHANGE 1 – interactive detection label
         resultContent.innerHTML = `
           <div class="result-label-card ${isTumor ? 'tumor-detected' : 'no-tumor'}">
             <div class="result-label-icon">
@@ -307,7 +304,6 @@ function detectTumor() {
               : `<strong>${prediction.tumor_type}</strong> detected. Please consult a medical professional.`}
           </div>`;
 
-        // ★ CHANGE 1 – Grad-CAM button: no fire icon, smaller
         if (prediction.gradcam && prediction.gradcam.generated && isTumor) {
           const gradcamBtn = document.createElement("button");
           gradcamBtn.className = "gradcam-btn";
@@ -368,9 +364,8 @@ const sendBtn  = document.getElementById("chatbotSend");
 const typingEl = document.getElementById("chatbotTyping");
 const badge    = document.getElementById("chatbotBadge");
 
-let currentMode    = "general";
-let currentContext = {};
-let panelOpen      = false;
+let currentMode = "general";
+let panelOpen   = false;
 
 fab.addEventListener("click", () => {
   panelOpen = !panelOpen;
@@ -386,67 +381,73 @@ closeBtn.addEventListener("click", () => {
   panel.classList.remove("open");
   panel.setAttribute("aria-hidden", "true");
   fab.classList.remove("active");
+  // clear conversation memory on server when panel is closed
+  fetch('/chat/reset', { method: 'POST' });
 });
 
-// ★ CHANGE 3 – preset question chips
+// ── Preset question chips ────────────────────────────────────────────────────
 document.querySelectorAll(".preset-q").forEach(btn => {
   btn.addEventListener("click", () => {
     const q    = btn.dataset.q;
     const mode = btn.dataset.mode;
     currentMode = mode;
-    // hide all preset chips after first use so chat feels clean
     document.getElementById("presetQuestions").style.display = "none";
-    sendMessage(q);
+    sendMessage(q, false);
   });
 });
 
-sendBtn.addEventListener("click", () => sendMessage(inputEl.value.trim(), true));
+sendBtn.addEventListener("click",  () => sendMessage(inputEl.value.trim(), true));
 inputEl.addEventListener("keydown", e => { if (e.key === "Enter") sendMessage(inputEl.value.trim(), true); });
 
 // ── Auto-detect the correct mode from free-typed message text ────────────────
 function autoDetectMode(msg) {
   const m = msg.toLowerCase();
-
-  // Comparative keywords
   if (/similar|comparison|compare|cases|dataset|differ|unlike|distinguish/.test(m))
     return "comparative";
-
-  // Result/heatmap keywords — only meaningful if a scan has been run
   if (currentPrediction &&
       /explain|result|heatmap|grad|cam|colour|color|red|yellow|blue|focus|region|where|why|reason|confidence|sure|certain|percent|%|how confident/.test(m))
     return "result_analysis";
-
-  // Everything else → educational general mode
   return "general";
 }
 
-// fromUser=true means the message was typed manually (auto-detect mode)
-// fromUser=false means it was fired programmatically via a preset chip (mode already set)
+// ── Build context for the chatbot backend ────────────────────────────────────
+function buildContext() {
+  // Always include the timestamp so chatbot_engine can find the right JSON entry
+  const ctx = { timestamp: currentScanTimestamp };
+
+  // Extra fields for result_analysis (chatbot_engine also reads direct from JSON
+  // but these act as a fallback in case JSON lookup misses)
+  if (currentPrediction) {
+    ctx.tumor_type          = currentPrediction.tumor_type;
+    ctx.confidence          = currentPrediction.highest_confidence;
+    ctx.activation_region   = currentPrediction.gradcam?.activation_analysis?.peak_region || "";
+    ctx.conv_layer          = currentPrediction.gradcam?.conv_layer_used || "";
+    ctx.activation_analysis = currentPrediction.gradcam?.activation_analysis || {};
+  }
+  return ctx;
+}
+
+// fromUser=true  → message typed manually  → auto-detect mode
+// fromUser=false → preset chip fired       → mode already set above
 function sendMessage(msg, fromUser = false) {
   if (!msg) return;
   addMessage("user", msg);
   inputEl.value = "";
 
-  // Auto-route free-typed messages so users always get the right handler
   if (fromUser) currentMode = autoDetectMode(msg);
-
-  if (currentPrediction) {
-    currentContext = {
-      tumor_type:         currentPrediction.tumor_type,
-      confidence:         currentPrediction.highest_confidence,
-      activation_region:  currentPrediction.gradcam?.activation_analysis?.peak_region || "unspecified",
-      conv_layer:         currentPrediction.gradcam?.conv_layer_used || "last conv layer",
-      activation_analysis:currentPrediction.gradcam?.activation_analysis || {}
-    };
-  }
 
   typingEl.hidden = false;
   messages.scrollTop = messages.scrollHeight;
 
-  fetch("/chat", {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message: msg, mode: currentMode, context: currentContext })
+  fetch('/chat', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    // FIX: use currentMode (not hardcoded) and send real context with timestamp
+    body: JSON.stringify({
+      message: msg,
+      mode:    currentMode,
+      context: buildContext()
+    })
   })
   .then(r => r.json())
   .then(data => {

@@ -1,266 +1,448 @@
 """
-chatbot_engine.py
------------------
-Handles all three chatbot cases:
+chatbot_engine.py  (v4 – RAG + real JSON data)
+-----------------------------------------------
+Architecture:
+  Case 1 – General/Educational  →  SBERT + FAISS + Groq LLM (RAG)
+  Case 2 – Result Analysis      →  reads gradcam_analysis.json   (latest entry)
+                                    reads detection_result.json   (latest entry)
+  Case 3 – Comparative          →  reads detection_result.json   (all entries,
+                                    filters by same tumor_type)
+                                    cross-refs gradcam_analysis.json for Grad-CAM details
 
-  Case 1 – General / Educational  (mode="general")
-  Case 2 – Result Analysis Bot    (mode="result_analysis")
-  Case 3 – Comparative Analysis   (mode="comparative")
+Both JSON files grow with every scan run — they are NEVER cached here.
+Every Case 2 / Case 3 call reads fresh from disk so it always reflects
+the most recent scan.
 
-get_reply(message, mode, context) is the single entry-point called by app.py.
+Setup:
+  pip install groq faiss-cpu sentence-transformers torch
+  export GROQ_API_KEY="your_key_from_console.groq.com"
+
+File layout expected:
+  data/tumorinfo.txt
+  data/detection_result.json
+  data/gradcam_analysis.json
 """
 
 import os
 import json
 
-# ── Knowledge-base path ────────────────────────────────────────────────────────
-BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
-DATA_PATH = os.path.join(BASE_DIR, "data", "tumorinfo.txt")
+# ── Paths ──────────────────────────────────────────────────────────────────────
+BASE_DIR        = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR        = os.path.join(BASE_DIR, "data")
+KB_PATH         = os.path.join(DATA_DIR, "tumorinfo.txt")
+DETECTION_PATH  = os.path.join(BASE_DIR, "detection_result.json")
+GRADCAM_PATH    = os.path.join(BASE_DIR, "gradcam_analysis.json")
 
-# ── Lazy-loaded NLP components ─────────────────────────────────────────────────
+# ── Config ─────────────────────────────────────────────────────────────────────
+DEBUG      = True
+USE_OLLAMA = False
+
+TOP_K                = 4
+SIMILARITY_THRESHOLD = 0.35
+MEMORY_THRESHOLD     = 5
+
+GROQ_MODEL   = "llama-3.1-8b-instant"
+OLLAMA_MODEL = "llama3.2"
+MAX_TOKENS   = 350
+TEMPERATURE  = 0.1
+
+# ── Lazy NLP components (Case 1 only) ─────────────────────────────────────────
 _embedder    = None
+_index       = None
 _documents   = None
-_embeddings  = None
+_queries     = None
+_groq_client = None
 
-SIMILARITY_THRESHOLD = 0.55
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  JSON HELPERS  –  always read fresh, never cached
+# ═════════════════════════════════════════════════════════════════════════════
+
+def _read_json(path: str) -> list:
+    """Read a JSON file and return its contents as a list. Returns [] on error."""
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, list) else []
+    except Exception as e:
+        print(f"[JSON READ ERROR] {path}: {e}")
+        return []
+
+
+def _latest_entry(data: list, tumor_type: str = None) -> dict:
+    """
+    Return the last entry in the list.
+    If tumor_type is given, return the last entry matching that type.
+    """
+    if not data:
+        return {}
+    if tumor_type:
+        matches = [d for d in data if d.get("tumor_type") == tumor_type]
+        return matches[-1] if matches else {}
+    return data[-1]
+
+
+def _entries_for_type(data: list, tumor_type: str, exclude_last: bool = True) -> list:
+    """
+    Return all entries in data that match tumor_type.
+    If exclude_last=True, skip the very last entry (that's the current scan).
+    """
+    matches = [d for d in data if d.get("tumor_type") == tumor_type]
+    if exclude_last and len(matches) > 1:
+        return matches[:-1]   # exclude current scan from comparison pool
+    return matches
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  CASE 1 – GENERAL / EDUCATIONAL  (RAG)
+# ═════════════════════════════════════════════════════════════════════════════
+
 def _load_nlp():
-    """Initialise sentence-transformer + knowledge base (once)."""
-    global _embedder, _documents, _embeddings
+    global _embedder, _index, _documents, _queries
     if _embedder is not None:
         return
 
+    import faiss
+    import numpy as np
     from sentence_transformers import SentenceTransformer
+
     _embedder = SentenceTransformer("all-MiniLM-L6-v2")
 
-    with open(DATA_PATH, "r", encoding="utf-8-sig") as f:
+    with open(KB_PATH, "r", encoding="utf-8-sig") as f:
         raw = f.read().replace("\r\n", "\n").strip()
 
-    docs, block = [], []
-    for line in raw.split("\n"):
-        line = line.strip()
-        if line == "":
-            if block: docs.append(" ".join(block)); block = []
-        else:
-            block.append(line)
-    if block: docs.append(" ".join(block))
+    questions, answers = [], []
+    for block in raw.split("\n\n"):
+        lines = [l.strip() for l in block.strip().split("\n") if l.strip()]
+        if not lines:
+            continue
+        questions.append(lines[0])
+        answers.append(" ".join(lines[1:]) if len(lines) > 1 else lines[0])
 
-    _documents  = docs
-    _embeddings = _embedder.encode(docs, convert_to_tensor=True)
-    print(f"✅ chatbot_engine: Loaded {len(docs)} knowledge chunks")
+    _queries   = questions
+    _documents = answers
+
+    vecs   = _embedder.encode(questions, convert_to_numpy=True, normalize_embeddings=True)
+    dim    = vecs.shape[1]
+    _index = faiss.IndexFlatIP(dim)
+    _index.add(vecs.astype("float32"))
+
+    print(f"✅ chatbot_engine v4: loaded {len(_documents)} Q-A pairs")
 
 
-# ── Generic greetings ──────────────────────────────────────────────────────────
+def _get_groq_client():
+    global _groq_client
+    if _groq_client is None:
+        from groq import Groq
+        api_key = os.environ.get("GROQ_API_KEY", "")
+        if not api_key:
+            raise EnvironmentError(
+                "GROQ_API_KEY is not set. Get a free key at https://console.groq.com"
+            )
+        _groq_client = Groq(api_key=api_key)
+    return _groq_client
+
+
+def _retrieve(query: str) -> list:
+    import numpy as np
+    vec = _embedder.encode([query], convert_to_numpy=True, normalize_embeddings=True)
+    scores, indices = _index.search(vec.astype("float32"), TOP_K)
+    results = []
+    for score, idx in zip(scores[0], indices[0]):
+        if idx == -1 or float(score) < SIMILARITY_THRESHOLD:
+            continue
+        results.append({
+            "question": _queries[idx],
+            "answer":   _documents[idx],
+            "score":    float(score),
+        })
+    if DEBUG:
+        for r in results:
+            print(f"[RETRIEVE] {r['score']:.3f} | {r['question'][:70]}")
+    return results
+
+
+_SYSTEM_PROMPT = """You are NeuroBot, a helpful brain tumor education assistant.
+Answer questions about brain tumors, MRI analysis, and the NeuroVision AI system.
+
+Rules:
+- Answer ONLY using the provided context passages.
+- Be concise and clear (2-4 sentences unless more detail is needed).
+- If context is insufficient, say: "I don't have specific information about that.
+  For medical concerns, please consult a qualified healthcare professional."
+- Never invent medical facts or give personal medical advice.
+- Do not repeat the question back."""
+
+
+def _generate(question: str, chunks: list, history: list = None) -> str:
+    if not chunks:
+        return (
+            "I don't have specific information about that in my knowledge base. "
+            "For medical concerns, please consult a qualified healthcare professional."
+        )
+    context_text = "\n".join(f"[{i}] {c['answer']}" for i, c in enumerate(chunks, 1))
+    user_msg = f"Context:\n{context_text}\n\nQuestion: {question}\nAnswer:"
+
+    messages = [{"role": "system", "content": _SYSTEM_PROMPT}]
+    if history:
+        messages.extend(history[-4:])
+    messages.append({"role": "user", "content": user_msg})
+
+    return _generate_groq(messages) if not USE_OLLAMA else _generate_ollama(messages)
+
+
+def _generate_groq(messages: list) -> str:
+    try:
+        resp = _get_groq_client().chat.completions.create(
+            model=GROQ_MODEL, messages=messages,
+            max_tokens=MAX_TOKENS, temperature=TEMPERATURE,
+        )
+        return resp.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"[GROQ ERROR] {e}")
+        return f"Error reaching the language model. Please try again. ({e})"
+
+
+def _generate_ollama(messages: list) -> str:
+    import urllib.request
+    payload = json.dumps({
+        "model": OLLAMA_MODEL, "messages": messages, "stream": False,
+        "options": {"temperature": TEMPERATURE, "num_predict": MAX_TOKENS},
+    }).encode()
+    try:
+        req = urllib.request.Request(
+            "http://localhost:11434/api/chat", data=payload,
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            return json.loads(resp.read())["message"]["content"].strip()
+    except Exception as e:
+        print(f"[OLLAMA ERROR] {e}")
+        return f"Error reaching Ollama. Is it running? ({e})"
+
+
 GENERIC = {
-    "hi":           "Hello! I'm NeuroBot. Ask me about brain tumors or your scan results.",
-    "hello":        "Hi! How can I help you with brain tumor information today?",
-    "hey":          "Hey! I'm here to help. Ask me anything about brain tumors.",
-    "good morning": "Good morning! How may I assist you?",
+    "hi":            "Hello! I'm NeuroBot. Ask me about brain tumors or your scan results.",
+    "hello":         "Hi! How can I help you with brain tumor information today?",
+    "hey":           "Hey! I'm here to help. Ask me anything about brain tumors.",
+    "good morning":  "Good morning! How may I assist you?",
     "good afternoon":"Good afternoon! Feel free to ask your question.",
-    "good evening": "Good evening! How can I help?",
-    "thank you":    "You're welcome! Let me know if you have more questions.",
-    "thanks":       "You're welcome!",
-    "thankyou":     "You're welcome!",
-    "bye":          "Goodbye! Take care.",
-    "who are you":  "I'm NeuroBot, an AI assistant specialising in brain tumor information and MRI analysis explanations.",
+    "good evening":  "Good evening! How can I help?",
+    "thank you":     "You're welcome! Let me know if you have more questions.",
+    "thanks":        "You're welcome!",
+    "thankyou":      "You're welcome!",
+    "bye":           "Goodbye! Take care.",
+    "who are you":   "I'm NeuroBot, an AI assistant specialising in brain tumor information and MRI analysis explanations.",
 }
 
-# ── Comparative case data (representative patterns per class) ──────────────────
-COMPARATIVE_CASES = {
-    "Glioma": [
-        {"case": "Case A", "location": "Left frontal lobe", "confidence": "96.1%",
-         "features": "Irregular margins, white matter infiltration, heterogeneous signal"},
-        {"case": "Case B", "location": "Right temporal lobe", "confidence": "91.4%",
-         "features": "Diffuse infiltration, mass effect, oedema present"},
-        {"case": "Case C", "location": "Corpus callosum", "confidence": "88.7%",
-         "features": "Butterfly pattern, bilateral involvement"},
-        {"case": "Case D", "location": "Parietal lobe", "confidence": "93.2%",
-         "features": "Ring enhancement, central necrosis"},
-        {"case": "Case E", "location": "Occipital lobe", "confidence": "89.5%",
-         "features": "Infiltrative borders, surrounding oedema"},
-    ],
-    "Meningioma": [
-        {"case": "Case A", "location": "Frontal convexity", "confidence": "97.3%",
-         "features": "Well-defined margin, dural tail, homogeneous enhancement"},
-        {"case": "Case B", "location": "Sphenoid ridge", "confidence": "94.8%",
-         "features": "Extra-axial location, calcification present"},
-        {"case": "Case C", "location": "Parasagittal region", "confidence": "92.1%",
-         "features": "Broad dural base, uniform enhancement"},
-        {"case": "Case D", "location": "Olfactory groove", "confidence": "90.6%",
-         "features": "Midline displacement, olfactory nerve involvement"},
-        {"case": "Case E", "location": "Posterior fossa", "confidence": "88.9%",
-         "features": "Cerebellopontine angle, cranial nerve compression"},
-    ],
-    "Pituitary": [
-        {"case": "Case A", "location": "Sella turcica", "confidence": "95.7%",
-         "features": "Midline position, sellar expansion, optic chiasm compression"},
-        {"case": "Case B", "location": "Suprasellar region", "confidence": "92.3%",
-         "features": "Upward extension, visual field defect"},
-        {"case": "Case C", "location": "Cavernous sinus", "confidence": "89.4%",
-         "features": "Lateral extension, carotid artery encasement"},
-        {"case": "Case D", "location": "Sella turcica", "confidence": "91.8%",
-         "features": "Microadenoma, subtle signal change"},
-        {"case": "Case E", "location": "Parasellar region", "confidence": "87.6%",
-         "features": "Hormone-secreting, macroadenoma size"},
-    ],
-    "No Tumor": [
-        {"case": "Case A", "location": "N/A", "confidence": "98.2%",
-         "features": "Normal cortical thickness, no mass effect"},
-        {"case": "Case B", "location": "N/A", "confidence": "96.5%",
-         "features": "Symmetric ventricles, no signal abnormality"},
-        {"case": "Case C", "location": "N/A", "confidence": "94.7%",
-         "features": "Normal grey-white differentiation"},
-        {"case": "Case D", "location": "N/A", "confidence": "97.1%",
-         "features": "No enhancement, normal sulcal pattern"},
-        {"case": "Case E", "location": "N/A", "confidence": "95.3%",
-         "features": "Age-appropriate brain volume, no focal lesion"},
-    ]
-}
 
-# ── Case 1 – General / Educational ────────────────────────────────────────────
-def _reply_general(message: str) -> str:
+def _reply_general(message: str, context: dict) -> str:
     _load_nlp()
-
-    import torch
-    from torch.nn.functional import cosine_similarity
-
     norm = message.lower().strip()
     if norm in GENERIC:
         return GENERIC[norm]
 
-    q_emb = _embedder.encode(message, convert_to_tensor=True)
-    sims  = cosine_similarity(q_emb.unsqueeze(0), _embeddings)
-    score = sims.max().item()
-    idx   = sims.argmax().item()
+    last_q  = context.get("last_question", "")
+    history = context.get("chat_history", [])
+    search_query = (last_q + " " + message) if (last_q and len(norm.split()) <= MEMORY_THRESHOLD) else message
 
-    if score < SIMILARITY_THRESHOLD:
-        return ("I don't have specific information about that in my knowledge base. "
-                "For medical concerns, please consult a qualified healthcare professional.")
+    if DEBUG:
+        print(f"[SEARCH QUERY] {search_query!r}")
 
-    context = _documents[idx]
-    # Strip the question part if present
-    answer  = context.split("?", 1)[1].strip() if "?" in context else context
-    return answer
+    return _generate(message, _retrieve(search_query), history)
 
 
-# ── Case 2 – Result Analysis Bot ──────────────────────────────────────────────
+# ═════════════════════════════════════════════════════════════════════════════
+#  CASE 2 – RESULT ANALYSIS
+#  Reads the latest entries from both JSON files.
+#  Answers questions about: what region the model focused on, why this class
+#  was predicted, confidence breakdown across all classes, Grad-CAM heatmap.
+# ═════════════════════════════════════════════════════════════════════════════
+
 def _reply_result_analysis(message: str, context: dict) -> str:
-    tumor_type  = context.get("tumor_type", "Unknown")
-    confidence  = context.get("confidence", "N/A")
-    region      = context.get("activation_region", "unspecified region")
-    conv_layer  = context.get("conv_layer", "last convolutional layer")
-    analysis    = context.get("activation_analysis", {})
+    # ── Load fresh from disk every call ───────────────────────────────────────
+    detection_data = _read_json(DETECTION_PATH)
+    gradcam_data   = _read_json(GRADCAM_PATH)
 
-    msg_lower = message.lower()
+    if not detection_data:
+        return "No scan results found yet. Please upload and analyse an MRI scan first."
 
-    # ── What region did the model focus on? ───────────────────────────────────
-    if any(w in msg_lower for w in ["region", "focus", "look", "area", "where"]):
-        focus  = analysis.get("focus_description",
-                              f"The model focused on the {region} of the MRI.")
-        interp = analysis.get("heatmap_interpretation", "")
-        return f"{focus}\n\n{interp}"
+    ts = context.get("timestamp")
+    if ts:
+        det  = next((d for d in reversed(detection_data) if d.get("timestamp") == ts), detection_data[-1])
+        gcam = next((d for d in reversed(gradcam_data)   if d.get("timestamp") == ts), {})
+    else:
+        det  = detection_data[-1]
+        gcam = _latest_entry(gradcam_data, det.get("tumor_type", ""))
 
-    # ── Why this prediction? ──────────────────────────────────────────────────
-    if any(w in msg_lower for w in ["why", "reason", "explain", "because", "how"]):
-        clinical = analysis.get("clinical_context", "")
-        match    = analysis.get("match_reason", "")
-        return (f"The model predicted **{tumor_type}** with **{confidence}** confidence.\n\n"
-                f"{clinical}\n\n{match}")
+    # ── Build a structured data summary to pass to the LLM ───────────────────
+    tumor_type = det.get("tumor_type", "Unknown")
+    all_conf   = det.get("confidence", {})
+    raw_probs  = det.get("raw_probabilities", {})
+    analysis   = gcam.get("activation_analysis", {})
 
-    # ── Heatmap / Grad-CAM explanation ────────────────────────────────────────
-    if any(w in msg_lower for w in ["heatmap", "grad", "cam", "colour", "color", "red", "yellow", "blue"]):
-        interp = analysis.get("heatmap_interpretation",
-                              "Red/yellow regions indicate highest activation.")
-        return interp
+    sorted_probs = sorted(raw_probs.items(), key=lambda x: x[1], reverse=True)
+    second       = sorted_probs[1] if len(sorted_probs) > 1 else None
 
-    # ── Confidence explanation ────────────────────────────────────────────────
-    if any(w in msg_lower for w in ["confidence", "sure", "certain", "accurate", "percent", "%"]):
-        high_pct = analysis.get("high_area_percentage", "N/A")
-        return (f"The model predicted **{tumor_type}** with a confidence of **{confidence}**. "
-                f"Approximately {high_pct}% of the image area showed high activation "
-                f"(>70% of peak), which contributed to this confidence level.")
+    scan_summary = f"""
+Scan result:
+  Predicted class: {tumor_type}
+  Confidence: {det.get("highest_confidence", "N/A")}
+  Has tumor: {det.get("has_tumor", False)}
+  Model: {det.get("model_version", "VGG16")}
+  All class probabilities: {", ".join(f"{k}: {v}" for k, v in all_conf.items())}
+  Runner-up class: {f"{second[0]} at {second[1]*100:.2f}%" if second else "N/A"}
 
-    # ── General result question ───────────────────────────────────────────────
-    focus    = analysis.get("focus_description", f"activation in the {region}")
-    clinical = analysis.get("clinical_context", "")
-    match    = analysis.get("match_reason", "")
+Grad-CAM analysis:
+  Conv layer: {gcam.get("conv_layer_used", "conv2d_12")}
+  Peak activation region: {analysis.get("peak_region", "N/A")}
+  Activation percentage: {analysis.get("activation_percentage", "N/A")}%
+  High-intensity area: {analysis.get("high_area_percentage", "N/A")}% of image
+  Focus description: {analysis.get("focus_description", "N/A")}
+  Clinical context: {analysis.get("clinical_context", "N/A")}
+  Match reason: {analysis.get("match_reason", "N/A")}
+  Heatmap interpretation: {analysis.get("heatmap_interpretation", "N/A")}
+""".strip()
 
-    return (f"**Detection Result: {tumor_type}** ({confidence} confidence)\n\n"
-            f"📍 **Grad-CAM Focus:** {focus}\n\n"
-            f"🔬 **Clinical Context:** {clinical}\n\n"
-            f"✅ **Why this matches:** {match}\n\n"
-            f"⚠️ This is an AI-assisted analysis. Please consult a medical professional for diagnosis.")
+    system = """You are NeuroBot, a brain tumor AI assistant.
+You are given structured data from an MRI scan analysis and a Grad-CAM explainability report.
+Answer the user's question in 2-3 sentences using only the data provided.
+Be conversational and clear. Do not dump all the data — only answer what was asked.
+Always end with a one-line reminder to consult a medical professional."""
+
+    user_msg = f"Scan data:\n{scan_summary}\n\nUser question: {message}"
+    messages = [
+        {"role": "system", "content": system},
+        {"role": "user",   "content": user_msg},
+    ]
+    return _generate_groq(messages)
 
 
-# ── Case 3 – Comparative Analysis Bot ─────────────────────────────────────────
+# ═════════════════════════════════════════════════════════════════════════════
+#  CASE 3 – COMPARATIVE ANALYSIS
+#  Reads ALL entries from detection_result.json + gradcam_analysis.json,
+#  filters by same tumor_type, builds a real comparison from actual scan history.
+# ═════════════════════════════════════════════════════════════════════════════
+
 def _reply_comparative(message: str, context: dict) -> str:
-    tumor_type  = context.get("tumor_type", "Unknown")
-    confidence  = context.get("confidence", "N/A")
-    msg_lower   = message.lower()
+    # ── Load fresh from disk ──────────────────────────────────────────────────
+    detection_data = _read_json(DETECTION_PATH)
+    gradcam_data   = _read_json(GRADCAM_PATH)
 
-    cases = COMPARATIVE_CASES.get(tumor_type, [])
-    if not cases:
-        return f"No comparative cases available for '{tumor_type}' in the dataset."
+    if not detection_data:
+        return "No scan history found. Please upload and analyse at least one MRI scan first."
 
-    # ── Similarities ──────────────────────────────────────────────────────────
-    if "similar" in msg_lower or "comparison" in msg_lower or "cases" in msg_lower or "show" in msg_lower:
-        lines = [f"📊 **Comparative Analysis – {tumor_type}**\n",
-                 f"Your scan was classified as **{tumor_type}** with **{confidence}** confidence.\n",
-                 f"Here are {len(cases)} similar cases from the dataset:\n"]
+    ts  = context.get("timestamp")
+    cur = next((d for d in reversed(detection_data) if d.get("timestamp") == ts), detection_data[-1]) if ts else detection_data[-1]
 
-        for c in cases:
-            lines.append(
-                f"**{c['case']}**\n"
-                f"  • Location: {c['location']}\n"
-                f"  • Confidence: {c['confidence']}\n"
-                f"  • Features: {c['features']}\n"
+    tumor_type = cur.get("tumor_type", "Unknown")
+    confidence = cur.get("highest_confidence", "N/A")
+    cur_ts     = cur.get("timestamp", "")
+
+    similar_det = [
+        d for d in detection_data
+        if d.get("tumor_type") == tumor_type and d.get("timestamp") != cur_ts
+    ]
+
+    def get_gcam(entry):
+        t = entry.get("timestamp", "")
+        match = next((g for g in gradcam_data if g.get("timestamp") == t), {})
+        return match.get("activation_analysis", {})
+
+    cur_gcam    = get_gcam(cur)
+    cur_region  = cur_gcam.get("peak_region", "N/A")
+    cur_act_pct = cur_gcam.get("activation_percentage", "N/A")
+
+    # ── Build structured data summary for LLM ────────────────────────────────
+    current_summary = f"""Current scan:
+  Tumor type: {tumor_type}
+  Confidence: {confidence}
+  Grad-CAM peak region: {cur_region}
+  Activation percentage: {cur_act_pct}%
+  All class scores: {", ".join(f"{k}: {v}" for k, v in cur.get("confidence", {}).items())}"""
+
+    if not similar_det:
+        similar_summary = "No similar cases found in history yet."
+    else:
+        similar_lines = []
+        confs = []
+        regions = []
+        for i, case in enumerate(similar_det, 1):
+            gcam   = get_gcam(case)
+            region = gcam.get("peak_region", "N/A")
+            act    = gcam.get("activation_percentage", "N/A")
+            c_conf = case.get("highest_confidence", "N/A")
+            c_ts   = case.get("timestamp", "N/A")
+            similar_lines.append(
+                f"  Case {i} ({c_ts}): confidence={c_conf}, "
+                f"Grad-CAM region={region}, activation={act}%, "
+                f"scores={', '.join(f'{k}: {v}' for k, v in case.get('confidence', {}).items())}"
             )
+            try:
+                confs.append(float(c_conf.replace("%", "")))
+            except (ValueError, AttributeError):
+                pass
+            if region != "N/A":
+                regions.append(region)
 
-        lines.append(
-            "\n🔍 **Pattern Summary:**\n"
-            f"All cases show the hallmark features of {tumor_type}: "
-            + _summary_features(tumor_type)
+        from collections import Counter
+        avg_conf      = f"{sum(confs)/len(confs):.1f}%" if confs else "N/A"
+        conf_range    = f"{min(confs):.1f}% to {max(confs):.1f}%" if confs else "N/A"
+        common_region = Counter(regions).most_common(1)[0][0] if regions else "N/A"
+
+        similar_summary = (
+            f"{len(similar_det)} similar {tumor_type} case(s) in history:\n"
+            + "\n".join(similar_lines)
+            + f"\n\nPattern stats: confidence range={conf_range}, "
+            f"avg={avg_conf}, most common Grad-CAM region={common_region}"
         )
-        lines.append(
-            "\n⚠️ These are representative training-set patterns used for model validation. "
-            "Always seek a qualified radiologist's opinion for clinical decisions."
-        )
-        return "\n".join(lines)
 
-    # ── Differences ───────────────────────────────────────────────────────────
-    if "differ" in msg_lower or "unlike" in msg_lower or "distinguish" in msg_lower:
-        return (f"While all cases share core **{tumor_type}** features, differences include:\n"
-                f"• **Location variability** – tumors of the same type can occur in multiple "
-                f"regions (e.g., {', '.join(c['location'] for c in cases[:3])}).\n"
-                f"• **Confidence range** – model confidence varies from "
-                f"{min(c['confidence'] for c in cases)} to {max(c['confidence'] for c in cases)} "
-                f"depending on image quality and lesion characteristics.\n"
-                f"• **Feature expression** – not all {tumor_type} cases exhibit every classic sign.")
+    full_data = f"{current_summary}\n\n{similar_summary}"
 
-    # ── Default ───────────────────────────────────────────────────────────────
-    return (f"I found **{len(cases)} similar {tumor_type} cases** in the dataset. "
-            f"Ask me to 'show similar cases' for a detailed comparison, or ask about "
-            f"differences between them.")
+    system = """You are NeuroBot, a brain tumor AI assistant.
+You are given data about the current MRI scan and similar historical cases from the system.
+Answer the user's question in 3-4 sentences using only this data.
+Be conversational — do not list every number, just highlight what is relevant to the question.
+End with a brief reminder that these are AI results and a radiologist should be consulted."""
+
+    user_msg = f"Scan history data:\n{full_data}\n\nUser question: {message}"
+    messages = [
+        {"role": "system", "content": system},
+        {"role": "user",   "content": user_msg},
+    ]
+    return _generate_groq(messages)
 
 
-def _summary_features(tumor_type: str) -> str:
-    summaries = {
-        "Glioma":      "diffuse infiltration, irregular margins, and white matter involvement.",
-        "Meningioma":  "extra-axial location, well-defined margins, and dural attachment.",
-        "Pituitary":   "midline sellar location, hormonal involvement, and suprasellar extension.",
-        "No Tumor":    "normal cortical architecture, no mass effect, and symmetric signal.",
-    }
-    return summaries.get(tumor_type, "consistent features across the class.")
+# ═════════════════════════════════════════════════════════════════════════════
+#  PUBLIC ENTRY POINT
+# ═════════════════════════════════════════════════════════════════════════════
 
-
-# ── Public entry-point ─────────────────────────────────────────────────────────
 def get_reply(message: str, mode: str = "general", context: dict = None) -> str:
     """
     Route to the correct case handler.
 
-    mode:
-      "general"         → Case 1 (educational RAG chatbot)
-      "result_analysis" → Case 2 (Grad-CAM + prediction explainer)
-      "comparative"     → Case 3 (similar-case comparison)
+    Parameters
+    ----------
+    message : str  –  user's current message
+    mode    : str  –  "general" | "result_analysis" | "comparative"
+    context : dict –  payload from app.py
+
+        For "general":
+            last_question  : str   – previous user message (memory)
+            chat_history   : list  – [{role, content}, ...] last N turns
+
+        For "result_analysis" and "comparative":
+            timestamp : str (optional) – ISO timestamp of the specific scan to use.
+                        If omitted, the latest entry in the JSON file is used.
+
+        After calling, update context in app.py:
+            session["last_question"] = message
+            session["chat_history"].append({"role": "user",      "content": message})
+            session["chat_history"].append({"role": "assistant", "content": reply})
+
+    Returns
+    -------
+    str – the bot's reply
     """
     if context is None:
         context = {}
@@ -271,7 +453,8 @@ def get_reply(message: str, mode: str = "general", context: dict = None) -> str:
         elif mode == "comparative":
             return _reply_comparative(message, context)
         else:
-            return _reply_general(message)
+            return _reply_general(message, context)
     except Exception as e:
-        import traceback; traceback.print_exc()
+        import traceback
+        traceback.print_exc()
         return f"I encountered an error processing your question. Please try again. ({e})"
